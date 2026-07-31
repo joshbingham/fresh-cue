@@ -1,75 +1,47 @@
-# React + TypeScript + Vite
+# FreshCue
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+FreshCue is a full-stack food inventory application designed to help users
+track expiry dates, understand what should be used first and reduce household
+food waste.
 
-Currently, two official plugins are available:
+## Product goal
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Turn household food inventory and expiry information into clear actions:
 
-## React Compiler
+- what needs using soon;
+- what meals can be made;
+- what is missing from a shopping list;
+- what food is regularly being wasted.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Planned core workflow
 
-## Expanding the ESLint configuration
+1. Add an item manually or using a barcode.
+2. Record its quantity, storage location and expiry date.
+3. View inventory ordered by urgency.
+4. Mark the item as consumed, wasted or expired.
+5. Use inventory data to support meal and shopping decisions.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Planned technology
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- React
+- TypeScript
+- Node.js
+- Express
+- PostgreSQL
+- REST APIs
+- Barcode product lookup
+- Automated testing
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Current status
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Initial project setup and product planning.
 
-```
+## Local development
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+```bash
+npm install
+npm run dev
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+This README immediately explains the user problem, workflow and planned technical depth.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+---
