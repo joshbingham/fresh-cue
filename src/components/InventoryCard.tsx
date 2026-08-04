@@ -6,6 +6,7 @@ import {
 
 interface InventoryCardProps {
   item: InventoryItem;
+  onEdit: (item: InventoryItem) => void;
 }
 
 function formatQuantity(item: InventoryItem): string {
@@ -53,6 +54,7 @@ function getExpiryLabel(expiryDate: string): string {
 
 export default function InventoryCard({
   item,
+  onEdit,
 }: InventoryCardProps) {
   const urgency = getExpiryUrgency(item.expiryDate);
 
@@ -87,6 +89,14 @@ export default function InventoryCard({
           <dd>{formatStorageLocation(item.storageLocation)}</dd>
         </div>
       </dl>
+
+      <button
+        type="button"
+        className="inventory-card__edit-button"
+        onClick={() => onEdit(item)}
+      >
+        Edit
+      </button>
     </article>
   );
 }
