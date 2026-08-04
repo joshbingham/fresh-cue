@@ -13,6 +13,10 @@ function formatQuantity(item: InventoryItem): string {
     return `${item.quantity} ${item.quantity === 1 ? "item" : "items"}`;
   }
 
+  if (item.quantityUnit === "l") {
+    return `${item.quantity} ${item.quantity === 1 ? "litre" : "litres"}`;
+  }
+
   return `${item.quantity} ${item.quantityUnit}`;
 }
 
