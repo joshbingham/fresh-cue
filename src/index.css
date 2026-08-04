@@ -33,6 +33,8 @@ dd {
   margin: 0;
 }
 
+/* Dashboard layout */
+
 .inventory-dashboard {
   width: min(1120px, calc(100% - 2rem));
   margin: 0 auto;
@@ -63,6 +65,8 @@ dd {
   font-size: 1.05rem;
   line-height: 1.65;
 }
+
+/* Inventory summary */
 
 .inventory-summary {
   display: grid;
@@ -103,6 +107,8 @@ dd {
   font-weight: 700;
 }
 
+/* Inventory sections */
+
 .use-soon-section,
 .all-inventory-section {
   display: grid;
@@ -122,6 +128,8 @@ dd {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1rem;
 }
+
+/* Inventory cards */
 
 .inventory-card {
   display: grid;
@@ -161,6 +169,51 @@ dd {
   font-size: 1.15rem;
 }
 
+.inventory-card__details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(max-content, 1fr));
+  gap: 1rem;
+}
+
+.inventory-card__details div {
+  min-width: 0;
+}
+
+.inventory-card__details dt {
+  margin-bottom: 0.2rem;
+  font-size: 0.75rem;
+  color: #697586;
+}
+
+.inventory-card__details dd {
+  font-weight: 600;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.inventory-card__edit-button {
+  justify-self: start;
+  width: auto;
+  padding: 0.55rem 0.9rem;
+  color: #22543d;
+  background: #ecfdf3;
+  border: 1px solid #86b89a;
+  border-radius: 0.55rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-card__edit-button:hover {
+  background: #dcfce7;
+}
+
+.inventory-card__edit-button:focus-visible {
+  outline: 3px solid rgba(47, 133, 90, 0.3);
+  outline-offset: 2px;
+}
+
+/* Urgency labels */
+
 .urgency-label {
   display: inline-flex;
   align-items: center;
@@ -191,27 +244,7 @@ dd {
   background: #dcfce7;
 }
 
-.inventory-card__details {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(max-content, 1fr));
-  gap: 1rem;
-}
-
-.inventory-card__details div {
-  min-width: 0;
-}
-
-.inventory-card__details dt {
-  margin-bottom: 0.2rem;
-  font-size: 0.75rem;
-  color: #697586;
-}
-
-.inventory-card__details dd {
-  font-weight: 600;
-  overflow-wrap: normal;
-  word-break: normal;
-}
+/* Empty state */
 
 .empty-state {
   padding: 2rem;
@@ -225,6 +258,8 @@ dd {
   margin-top: 0.5rem;
   color: #52606d;
 }
+
+/* Add item section */
 
 .add-item-section {
   display: grid;
@@ -247,6 +282,8 @@ dd {
   line-height: 1.5;
 }
 
+/* Shared form styles */
+
 .add-item-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -257,6 +294,7 @@ dd {
   display: grid;
   align-content: start;
   gap: 0.4rem;
+  min-width: 0;
 }
 
 .form-field label {
@@ -267,6 +305,7 @@ dd {
 .form-field input,
 .form-field select {
   width: 100%;
+  min-width: 0;
   min-height: 2.75rem;
   padding: 0.65rem 0.75rem;
   color: #1f2933;
@@ -313,31 +352,43 @@ dd {
   outline-offset: 2px;
 }
 
-@media (min-width: 900px) {
-  .add-item-form {
-    grid-template-columns:
-      minmax(0, 2fr)
-      minmax(7rem, 0.7fr)
-      minmax(8rem, 1fr)
-      minmax(10rem, 1fr)
-      minmax(10rem, 1fr)
-      auto;
-  }
+/* Edit modal */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
 }
 
-@media (max-width: 560px) {
-  .add-item-section {
-    padding: 1rem;
-  }
-
-  .add-item-form {
-    grid-template-columns: 1fr;
-  }
-
-  .add-item-form button {
-    width: 100%;
-  }
+.modal-dialog {
+  width: min(840px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 1rem;
+  box-shadow: 0 1.5rem 4rem rgba(15, 23, 42, 0.3);
 }
+
+.edit-item-section {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+}
+
+.modal-dialog .add-item-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.modal-dialog .add-item-form button {
+  width: auto;
+  justify-self: start;
+}
+
+/* Responsive layout */
 
 @media (min-width: 760px) {
   .inventory-dashboard {
@@ -354,6 +405,22 @@ dd {
   }
 }
 
+@media (min-width: 900px) {
+  .add-item-form {
+    grid-template-columns:
+      minmax(0, 2fr)
+      minmax(7rem, 0.7fr)
+      minmax(8rem, 1fr)
+      minmax(10rem, 1fr)
+      minmax(10rem, 1fr)
+      auto;
+  }
+
+  .modal-dialog .add-item-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 560px) {
   .inventory-dashboard {
     width: min(100% - 1rem, 1120px);
@@ -361,7 +428,9 @@ dd {
   }
 
   .inventory-summary__breakdown,
-  .inventory-card__details {
+  .inventory-card__details,
+  .add-item-form,
+  .modal-dialog .add-item-form {
     grid-template-columns: 1fr;
   }
 
@@ -371,5 +440,18 @@ dd {
 
   .urgency-label {
     white-space: normal;
+  }
+
+  .add-item-section {
+    padding: 1rem;
+  }
+
+  .add-item-form button,
+  .modal-dialog .add-item-form button {
+    width: 100%;
+  }
+
+  .edit-item-section {
+    padding: 1rem;
   }
 }

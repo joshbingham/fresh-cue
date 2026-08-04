@@ -4,10 +4,12 @@ import InventoryCard from "./InventoryCard";
 
 interface UseSoonSectionProps {
   items: InventoryItem[];
+  onEdit: (item: InventoryItem) => void;
 }
 
 export default function UseSoonSection({
   items,
+  onEdit,
 }: UseSoonSectionProps) {
   const useSoonItems = items.filter((item) => {
     if (item.status !== "active") {
@@ -36,6 +38,7 @@ export default function UseSoonSection({
             <InventoryCard
               key={item.id}
               item={item}
+              onEdit={onEdit}
             />
           ))}
         </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import AddItemForm from "../components/AddItemForm";
+import EditItemForm from "../components/EditItemForm";
 import InventoryCard from "../components/InventoryCard";
 import InventorySummary from "../components/InventorySummary";
 import UseSoonSection from "../components/UseSoonSection";
@@ -9,10 +10,13 @@ import type { InventoryItem } from "../types";
 export default function InventoryDashboard() {
   const [inventory, setInventory] = useState(sampleInventory);
 
+  const [itemBeingEdited, setItemBeingEdited] =
+    useState<InventoryItem | null>(null);
+
   const activeItems = inventory
     .filter((item) => item.status === "active")
     .sort(
-        (a, b) =>
+      (a, b) =>
         new Date(`${a.expiryDate}T00:00:00`).getTime() -
         new Date(`${b.expiryDate}T00:00:00`).getTime(),
     );
@@ -22,6 +26,24 @@ export default function InventoryDashboard() {
       item,
       ...currentInventory,
     ]);
+  }
+
+  function handleEditItem(item: InventoryItem) {
+    setItemBeingEdited(item);
+  }
+
+  function handleSaveItem(updatedItem: InventoryItem) {
+    setInventory((currentInventory) =>
+      currentInventory.map((item) =>
+        item.id === updatedItem.id ? updatedItem : item,
+      ),
+    );
+
+    setItemBeingEdited(null);
+  }
+
+  function handleCancelEdit() {
+    setItemBeingEdited(null);
   }
 
   return (
@@ -44,41 +66,78 @@ export default function InventoryDashboard() {
       <section
         className="add-item-section"
         aria-labelledby="add-item-heading"
-        >
+      >
         <div className="add-item-section__header">
-            <p className="inventory-summary__eyebrow">Add to inventory</p>
-            <h2 id="add-item-heading">Add a food item</h2>
-            <p>
-            Record what you have and FreshCue will help prioritise what to
-            use first.
-            </p>
+          <p className="inventory-summary__eyebrow">
+            Add to inventory
+          </p>
+
+          <h2 id="add-item-heading">Add a food item</h2>
+
+          <p>
+            Record what you have and FreshCue will help
+            prioritise what to use first.
+          </p>
         </div>
 
         <AddItemForm onAddItem={handleAddItem} />
-        </section>
+      </section>
 
-      
+      {itemBeingEdited && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={handleCancelEdit}
+        >
+          <div
+            className="modal-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-item-heading"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <EditItemForm
+              key={itemBeingEdited.id}
+              item={itemBeingEdited}
+              onSave={handleSaveItem}
+              onCancel={handleCancelEdit}
+            />
+          </div>
+        </div>
+      )}
 
-      <UseSoonSection items={inventory} />
+      <UseSoonSection
+        items={inventory}
+        onEdit={handleEditItem}
+      />
 
       <section
         className="all-inventory-section"
         aria-labelledby="all-inventory-heading"
       >
-        <h2 id="all-inventory-heading">All inventory</h2>
+        <h2 id="all-inventory-heading">
+          All inventory
+        </h2>
 
         {activeItems.length === 0 ? (
           <div className="empty-state">
             <h3>Your inventory is empty</h3>
+
             <p>
-              Add your first food item to start tracking what needs
-              using.
+              Add your first food item to start tracking what
+              needs using.
             </p>
           </div>
         ) : (
           <div className="inventory-list">
             {activeItems.map((item) => (
-              <InventoryCard key={item.id} item={item} />
+              <InventoryCard
+                key={item.id}
+                item={item}
+                onEdit={handleEditItem}
+              />
             ))}
           </div>
         )}
