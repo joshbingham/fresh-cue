@@ -1,12 +1,28 @@
+import { useState } from "react";
+import AddItemForm from "../components/AddItemForm";
 import InventoryCard from "../components/InventoryCard";
 import InventorySummary from "../components/InventorySummary";
 import UseSoonSection from "../components/UseSoonSection";
 import { sampleInventory } from "../data/sampleInventory";
+import type { InventoryItem } from "../types";
 
 export default function InventoryDashboard() {
-  const activeItems = sampleInventory.filter(
-    (item) => item.status === "active",
-  );
+  const [inventory, setInventory] = useState(sampleInventory);
+
+  const activeItems = inventory
+    .filter((item) => item.status === "active")
+    .sort(
+        (a, b) =>
+        new Date(`${a.expiryDate}T00:00:00`).getTime() -
+        new Date(`${b.expiryDate}T00:00:00`).getTime(),
+    );
+
+  function handleAddItem(item: InventoryItem) {
+    setInventory((currentInventory) => [
+      item,
+      ...currentInventory,
+    ]);
+  }
 
   return (
     <main className="inventory-dashboard">
@@ -23,9 +39,27 @@ export default function InventoryDashboard() {
         </p>
       </header>
 
-      <InventorySummary items={sampleInventory} />
+      <InventorySummary items={inventory} />
 
-      <UseSoonSection items={sampleInventory} />
+      <section
+        className="add-item-section"
+        aria-labelledby="add-item-heading"
+        >
+        <div className="add-item-section__header">
+            <p className="inventory-summary__eyebrow">Add to inventory</p>
+            <h2 id="add-item-heading">Add a food item</h2>
+            <p>
+            Record what you have and FreshCue will help prioritise what to
+            use first.
+            </p>
+        </div>
+
+        <AddItemForm onAddItem={handleAddItem} />
+        </section>
+
+      
+
+      <UseSoonSection items={inventory} />
 
       <section
         className="all-inventory-section"
@@ -44,10 +78,7 @@ export default function InventoryDashboard() {
         ) : (
           <div className="inventory-list">
             {activeItems.map((item) => (
-              <InventoryCard
-                key={item.id}
-                item={item}
-              />
+              <InventoryCard key={item.id} item={item} />
             ))}
           </div>
         )}

@@ -226,6 +226,119 @@ dd {
   color: #52606d;
 }
 
+.add-item-section {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  margin-bottom: 2.5rem;
+  background: #ffffff;
+  border: 1px solid #dce5d8;
+  border-radius: 1rem;
+  box-shadow: 0 0.75rem 2rem rgba(31, 41, 51, 0.06);
+}
+
+.add-item-section__header {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.add-item-section__header p:last-child {
+  color: #52606d;
+  line-height: 1.5;
+}
+
+.add-item-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.form-field {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+}
+
+.form-field label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  color: #1f2933;
+  background: #ffffff;
+  border: 1px solid #aeb8a9;
+  border-radius: 0.6rem;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: 3px solid rgba(47, 133, 90, 0.2);
+  border-color: #2f855a;
+}
+
+.form-field input[aria-invalid="true"],
+.form-field select[aria-invalid="true"] {
+  border-color: #b42318;
+}
+
+.form-error {
+  color: #b42318;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.add-item-form button {
+  min-height: 2.75rem;
+  align-self: end;
+  padding: 0.7rem 1rem;
+  color: #ffffff;
+  background: #2f855a;
+  border: 0;
+  border-radius: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.add-item-form button:hover {
+  background: #276749;
+}
+
+.add-item-form button:focus-visible {
+  outline: 3px solid rgba(47, 133, 90, 0.3);
+  outline-offset: 2px;
+}
+
+@media (min-width: 900px) {
+  .add-item-form {
+    grid-template-columns:
+      minmax(0, 2fr)
+      minmax(7rem, 0.7fr)
+      minmax(8rem, 1fr)
+      minmax(10rem, 1fr)
+      minmax(10rem, 1fr)
+      auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .add-item-section {
+    padding: 1rem;
+  }
+
+  .add-item-form {
+    grid-template-columns: 1fr;
+  }
+
+  .add-item-form button {
+    width: 100%;
+  }
+}
+
 @media (min-width: 760px) {
   .inventory-dashboard {
     padding-top: 3rem;
