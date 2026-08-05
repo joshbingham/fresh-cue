@@ -123,6 +123,31 @@ dd {
   margin-top: 2.5rem;
 }
 
+.inventory-search {
+  display: grid;
+  gap: 0.4rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.inventory-search label {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.inventory-search input {
+  width: min(24rem, 100%);
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #aeb8a9;
+  border-radius: 0.6rem;
+  background: #ffffff;
+}
+
+.inventory-search input:focus {
+  outline: 3px solid rgba(47, 133, 90, 0.2);
+  border-color: #2f855a;
+}
+
 .inventory-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
