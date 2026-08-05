@@ -10,14 +10,23 @@ import type { InventoryItem } from "../types";
 export default function InventoryDashboard() {
   const [inventory, setInventory] = useState(sampleInventory);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [itemBeingEdited, setItemBeingEdited] =
     useState<InventoryItem | null>(null);
 
   const [itemBeingDeleted, setItemBeingDeleted] =
     useState<InventoryItem | null>(null);
 
+  const normalisedSearchQuery = searchQuery.trim().toLowerCase();
+
   const activeItems = inventory
     .filter((item) => item.status === "active")
+    .filter((item) =>
+      item.name
+        .toLowerCase()
+        .includes(normalisedSearchQuery),
+    )
     .sort(
       (a, b) =>
         new Date(`${a.expiryDate}T00:00:00`).getTime() -
@@ -200,14 +209,43 @@ export default function InventoryDashboard() {
           All inventory
         </h2>
 
+        <div className="inventory-search">
+          <label htmlFor="inventory-search">
+            Search inventory
+          </label>
+
+          <input
+            id="inventory-search"
+            type="search"
+            value={searchQuery}
+            onChange={(event) =>
+              setSearchQuery(event.target.value)
+            }
+            placeholder="Search by item name"
+          />
+        </div>
+
         {activeItems.length === 0 ? (
           <div className="empty-state">
-            <h3>Your inventory is empty</h3>
+            {normalisedSearchQuery ? (
+              <>
+                <h3>No matching items</h3>
 
-            <p>
-              Add your first food item to start tracking what
-              needs using.
-            </p>
+                <p>
+                  Try a different search term or clear the search
+                  to view your full inventory.
+                </p>
+              </>
+            ) : (
+              <>
+                <h3>Your inventory is empty</h3>
+
+                <p>
+                  Add your first food item to start tracking what
+                  needs using.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <div className="inventory-list">
