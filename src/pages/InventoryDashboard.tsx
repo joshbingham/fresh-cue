@@ -7,10 +7,15 @@ import UseSoonSection from "../components/UseSoonSection";
 import { sampleInventory } from "../data/sampleInventory";
 import type { InventoryItem } from "../types";
 
+type StorageFilter = "all" | InventoryItem["storageLocation"];
+
 export default function InventoryDashboard() {
   const [inventory, setInventory] = useState(sampleInventory);
 
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [storageFilter, setStorageFilter] =
+    useState<StorageFilter>("all");
 
   const [itemBeingEdited, setItemBeingEdited] =
     useState<InventoryItem | null>(null);
@@ -26,6 +31,11 @@ export default function InventoryDashboard() {
       item.name
         .toLowerCase()
         .includes(normalisedSearchQuery),
+    )
+    .filter(
+      (item) =>
+        storageFilter === "all" ||
+        item.storageLocation === storageFilter,
     )
     .sort(
       (a, b) =>
@@ -225,15 +235,44 @@ export default function InventoryDashboard() {
           />
         </div>
 
+        <fieldset className="storage-filter">
+          <legend>Filter by storage location</legend>
+
+          <div className="storage-filter__options">
+            {(
+              [
+                ["all", "All"],
+                ["fridge", "Fridge"],
+                ["freezer", "Freezer"],
+                ["cupboard", "Cupboard"],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                className={
+                  storageFilter === value
+                    ? "storage-filter__button storage-filter__button--active"
+                    : "storage-filter__button"
+                }
+                onClick={() => setStorageFilter(value)}
+                aria-pressed={storageFilter === value}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
         {activeItems.length === 0 ? (
           <div className="empty-state">
-            {normalisedSearchQuery ? (
+            {normalisedSearchQuery || storageFilter !== "all" ? (
               <>
                 <h3>No matching items</h3>
 
                 <p>
-                  Try a different search term or clear the search
-                  to view your full inventory.
+                  Try changing your search or storage filter to view more
+                  inventory items.
                 </p>
               </>
             ) : (
@@ -241,8 +280,8 @@ export default function InventoryDashboard() {
                 <h3>Your inventory is empty</h3>
 
                 <p>
-                  Add your first food item to start tracking what
-                  needs using.
+                  Add your first food item to start tracking what needs
+                  using.
                 </p>
               </>
             )}

@@ -148,6 +148,49 @@ dd {
   border-color: #2f855a;
 }
 
+.storage-filter {
+  padding: 0;
+  margin: 0 0 1.5rem;
+  border: 0;
+}
+
+.storage-filter legend {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.storage-filter__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.storage-filter__button {
+  padding: 0.55rem 0.9rem;
+  color: #22543d;
+  background: #ffffff;
+  border: 1px solid #86b89a;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.storage-filter__button:not(.storage-filter__button--active):hover {
+  background: #ecfdf3;
+}
+
+.storage-filter__button--active {
+  color: #ffffff;
+  background: #2f855a;
+  border-color: #2f855a;
+}
+
+.storage-filter__button:focus-visible {
+  outline: 3px solid rgba(47, 133, 90, 0.3);
+  outline-offset: 2px;
+}
+
 .inventory-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
