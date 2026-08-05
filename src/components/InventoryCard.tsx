@@ -7,15 +7,20 @@ import {
 interface InventoryCardProps {
   item: InventoryItem;
   onEdit: (item: InventoryItem) => void;
+  onDelete: (item: InventoryItem) => void;
 }
 
 function formatQuantity(item: InventoryItem): string {
   if (item.quantityUnit === "item") {
-    return `${item.quantity} ${item.quantity === 1 ? "item" : "items"}`;
+    return `${item.quantity} ${
+      item.quantity === 1 ? "item" : "items"
+    }`;
   }
 
   if (item.quantityUnit === "l") {
-    return `${item.quantity} ${item.quantity === 1 ? "litre" : "litres"}`;
+    return `${item.quantity} ${
+      item.quantity === 1 ? "litre" : "litres"
+    }`;
   }
 
   return `${item.quantity} ${item.quantityUnit}`;
@@ -55,14 +60,20 @@ function getExpiryLabel(expiryDate: string): string {
 export default function InventoryCard({
   item,
   onEdit,
+  onDelete,
 }: InventoryCardProps) {
   const urgency = getExpiryUrgency(item.expiryDate);
 
   return (
-    <article className={`inventory-card inventory-card--${urgency}`}>
+    <article
+      className={`inventory-card inventory-card--${urgency}`}
+    >
       <div className="inventory-card__header">
         <h3>{item.name}</h3>
-        <span className={`urgency-label urgency-label--${urgency}`}>
+
+        <span
+          className={`urgency-label urgency-label--${urgency}`}
+        >
           {getExpiryLabel(item.expiryDate)}
         </span>
       </div>
@@ -86,17 +97,31 @@ export default function InventoryCard({
 
         <div>
           <dt>Stored in</dt>
-          <dd>{formatStorageLocation(item.storageLocation)}</dd>
+          <dd>
+            {formatStorageLocation(
+              item.storageLocation,
+            )}
+          </dd>
         </div>
       </dl>
 
-      <button
-        type="button"
-        className="inventory-card__edit-button"
-        onClick={() => onEdit(item)}
-      >
-        Edit
-      </button>
+      <div className="inventory-card__actions">
+        <button
+          type="button"
+          className="inventory-card__edit-button"
+          onClick={() => onEdit(item)}
+        >
+          Edit
+        </button>
+
+        <button
+          type="button"
+          className="inventory-card__delete-button"
+          onClick={() => onDelete(item)}
+        >
+          Delete
+        </button>
+      </div>
     </article>
   );
 }

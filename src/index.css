@@ -388,6 +388,88 @@ dd {
   justify-self: start;
 }
 
+.inventory-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.inventory-card__delete-button {
+  width: auto;
+  padding: 0.55rem 0.9rem;
+  color: #8a1c13;
+  background: #fff1f0;
+  border: 1px solid #f0a39b;
+  border-radius: 0.55rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.inventory-card__delete-button:hover {
+  background: #fee4e2;
+}
+
+.inventory-card__delete-button:focus-visible {
+  outline: 3px solid rgba(180, 35, 24, 0.25);
+  outline-offset: 2px;
+}
+
+.modal-dialog--confirmation {
+  width: min(480px, 100%);
+}
+
+.delete-confirmation {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.delete-confirmation > div:first-child {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.delete-confirmation__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.delete-confirmation__confirm,
+.delete-confirmation__cancel {
+  min-height: 2.75rem;
+  padding: 0.7rem 1rem;
+  border-radius: 0.6rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-confirmation__confirm {
+  color: #ffffff;
+  background: #b42318;
+  border: 1px solid #b42318;
+}
+
+.delete-confirmation__confirm:hover {
+  background: #8f1c13;
+}
+
+.delete-confirmation__cancel {
+  color: #1f2933;
+  background: #ffffff;
+  border: 1px solid #aeb8a9;
+}
+
+.delete-confirmation__cancel:hover {
+  background: #f4f7f2;
+}
+
+.delete-confirmation__confirm:focus-visible,
+.delete-confirmation__cancel:focus-visible {
+  outline: 3px solid rgba(47, 133, 90, 0.3);
+  outline-offset: 2px;
+}
+
 /* Responsive layout */
 
 @media (min-width: 760px) {
@@ -453,5 +535,17 @@ dd {
 
   .edit-item-section {
     padding: 1rem;
+  }
+
+  .inventory-card__actions,
+  .delete-confirmation__actions {
+    flex-direction: column;
+  }
+
+  .inventory-card__edit-button,
+  .inventory-card__delete-button,
+  .delete-confirmation__confirm,
+  .delete-confirmation__cancel {
+    width: 100%;
   }
 }

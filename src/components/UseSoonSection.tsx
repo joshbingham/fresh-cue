@@ -5,11 +5,13 @@ import InventoryCard from "./InventoryCard";
 interface UseSoonSectionProps {
   items: InventoryItem[];
   onEdit: (item: InventoryItem) => void;
+  onDelete: (item: InventoryItem) => void;
 }
 
 export default function UseSoonSection({
   items,
   onEdit,
+  onDelete,
 }: UseSoonSectionProps) {
   const useSoonItems = items.filter((item) => {
     if (item.status !== "active") {
@@ -39,6 +41,7 @@ export default function UseSoonSection({
               key={item.id}
               item={item}
               onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))}
         </div>

@@ -13,6 +13,9 @@ export default function InventoryDashboard() {
   const [itemBeingEdited, setItemBeingEdited] =
     useState<InventoryItem | null>(null);
 
+  const [itemBeingDeleted, setItemBeingDeleted] =
+    useState<InventoryItem | null>(null);
+
   const activeItems = inventory
     .filter((item) => item.status === "active")
     .sort(
@@ -44,6 +47,28 @@ export default function InventoryDashboard() {
 
   function handleCancelEdit() {
     setItemBeingEdited(null);
+  }
+
+  function handleDeleteItem(item: InventoryItem) {
+    setItemBeingDeleted(item);
+  }
+
+  function handleConfirmDelete() {
+    if (!itemBeingDeleted) {
+      return;
+    }
+
+    setInventory((currentInventory) =>
+      currentInventory.filter(
+        (item) => item.id !== itemBeingDeleted.id,
+      ),
+    );
+
+    setItemBeingDeleted(null);
+  }
+
+  function handleCancelDelete() {
+    setItemBeingDeleted(null);
   }
 
   return (
@@ -108,9 +133,63 @@ export default function InventoryDashboard() {
         </div>
       )}
 
+      {itemBeingDeleted && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={handleCancelDelete}
+        >
+          <div
+            className="modal-dialog modal-dialog--confirmation"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-item-heading"
+            aria-describedby="delete-item-description"
+            onMouseDown={(event) =>
+              event.stopPropagation()
+            }
+          >
+            <section className="delete-confirmation">
+              <div>
+                <p className="inventory-summary__eyebrow">
+                  Remove from inventory
+                </p>
+
+                <h2 id="delete-item-heading">
+                  Delete {itemBeingDeleted.name}?
+                </h2>
+
+                <p id="delete-item-description">
+                  This item will be removed from your inventory.
+                </p>
+              </div>
+
+              <div className="delete-confirmation__actions">
+                <button
+                  type="button"
+                  className="delete-confirmation__confirm"
+                  onClick={handleConfirmDelete}
+                >
+                  Delete item
+                </button>
+
+                <button
+                  type="button"
+                  className="delete-confirmation__cancel"
+                  onClick={handleCancelDelete}
+                >
+                  Cancel
+                </button>
+              </div>
+            </section>
+          </div>
+        </div>
+      )}
+
       <UseSoonSection
         items={inventory}
         onEdit={handleEditItem}
+        onDelete={handleDeleteItem}
       />
 
       <section
@@ -137,6 +216,7 @@ export default function InventoryDashboard() {
                 key={item.id}
                 item={item}
                 onEdit={handleEditItem}
+                onDelete={handleDeleteItem}
               />
             ))}
           </div>
