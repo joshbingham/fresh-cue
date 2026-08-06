@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import { testDatabaseConnection } from "./db.js";
 
 const app = express();
 
@@ -14,6 +15,21 @@ app.get("/health", (_request, response) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`FreshCue API listening on port ${port}`);
-});
+async function startServer(): Promise<void> {
+  try {
+    await testDatabaseConnection();
+
+    app.listen(port, () => {
+      console.log(`FreshCue API listening on port ${port}`);
+    });
+  } catch (error) {
+    console.error(
+      "Unable to connect to PostgreSQL:",
+      error,
+    );
+
+    process.exit(1);
+  }
+}
+
+void startServer();
