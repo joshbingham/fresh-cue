@@ -188,14 +188,61 @@ export default function InventoryDashboard() {
     setItemBeingEdited(item);
   }
 
-  function handleSaveItem(updatedItem: InventoryItem) {
-    setInventory((currentInventory) =>
-      currentInventory.map((item) =>
-        item.id === updatedItem.id ? updatedItem : item,
-      ),
-    );
+  async function handleSaveItem(
+    updatedItem: InventoryItem,
+  ): Promise<boolean> {
+    try {
+      const response = await fetch(
+        `http://localhost:3001/inventory/${updatedItem.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: updatedItem.name,
+            quantity: updatedItem.quantity,
+            quantity_unit: updatedItem.quantityUnit,
+            expiry_date: updatedItem.expiryDate,
+            storage_location: updatedItem.storageLocation,
+            status: updatedItem.status,
+          }),
+        },
+      );
 
-    setItemBeingEdited(null);
+      if (!response.ok) {
+        return false;
+      }
+
+      const savedItem =
+        (await response.json()) as InventoryApiItem;
+
+      const mappedItem: InventoryItem = {
+        id: savedItem.id,
+        name: savedItem.name,
+        quantity: Number(savedItem.quantity),
+        quantityUnit: savedItem.quantity_unit,
+        expiryDate: savedItem.expiry_date.slice(0, 10),
+        storageLocation: savedItem.storage_location,
+        status: savedItem.status,
+        createdAt: savedItem.created_at,
+        updatedAt: savedItem.updated_at,
+      };
+
+      setInventory((currentInventory) =>
+        currentInventory.map((item) =>
+          item.id === mappedItem.id ? mappedItem : item,
+        ),
+      );
+
+      setItemBeingEdited(null);
+
+      return true;
+    } catch (error) {
+      console.error("Failed to update inventory item:", error);
+
+      return false;
+    }
   }
 
   function handleCancelEdit() {
