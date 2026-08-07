@@ -1,16 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddItemForm from "../components/AddItemForm";
 import EditItemForm from "../components/EditItemForm";
 import InventoryCard from "../components/InventoryCard";
 import InventorySummary from "../components/InventorySummary";
 import UseSoonSection from "../components/UseSoonSection";
-import { sampleInventory } from "../data/sampleInventory";
 import type { InventoryItem } from "../types";
 
 type StorageFilter = "all" | InventoryItem["storageLocation"];
 
+interface InventoryApiItem {
+  id: string;
+  name: string;
+  quantity: string | number;
+  quantity_unit: InventoryItem["quantityUnit"];
+  expiry_date: string;
+  storage_location: InventoryItem["storageLocation"];
+  status: InventoryItem["status"];
+  created_at: string;
+  updated_at: string;
+}
+
 export default function InventoryDashboard() {
-  const [inventory, setInventory] = useState(sampleInventory);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -22,6 +35,48 @@ export default function InventoryDashboard() {
 
   const [itemBeingDeleted, setItemBeingDeleted] =
     useState<InventoryItem | null>(null);
+
+  useEffect(() => {
+    async function loadInventory() {
+      try {
+        const response = await fetch(
+          "http://localhost:3001/inventory",
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            `Inventory request failed with status ${response.status}`,
+          );
+        }
+
+        const data = (await response.json()) as InventoryApiItem[];
+
+        const mappedInventory: InventoryItem[] = data.map((item) => ({
+          id: item.id,
+          name: item.name,
+          quantity: Number(item.quantity),
+          quantityUnit: item.quantity_unit,
+          expiryDate: item.expiry_date.slice(0, 10),
+          storageLocation: item.storage_location,
+          status: item.status,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+        }));
+
+        setInventory(mappedInventory);
+      } catch (error) {
+        console.error("Failed to load inventory:", error);
+
+        setLoadError(
+          "We couldn't load your inventory. Please try again.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    void loadInventory();
+  }, []);
 
   const normalisedSearchQuery = searchQuery.trim().toLowerCase();
 
@@ -88,6 +143,22 @@ export default function InventoryDashboard() {
 
   function handleCancelDelete() {
     setItemBeingDeleted(null);
+  }
+
+  if (isLoading) {
+    return (
+      <main className="inventory-dashboard">
+        <p>Loading inventory...</p>
+      </main>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <main className="inventory-dashboard">
+        <p role="alert">{loadError}</p>
+      </main>
+    );
   }
 
   return (

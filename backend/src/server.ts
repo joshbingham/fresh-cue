@@ -1,4 +1,5 @@
 import "dotenv/config";
+import cors from "cors";
 import express from "express";
 import { testDatabaseConnection } from "./db.js";
 import { inventoryRouter } from "./routes/inventory.js";
@@ -6,6 +7,12 @@ import { inventoryRouter } from "./routes/inventory.js";
 const app = express();
 
 const port = Number(process.env.PORT) || 3001;
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 
 app.use(express.json());
 
