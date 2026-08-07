@@ -224,6 +224,35 @@ inventoryRouter.put("/:id", async (request, response) => {
   }
 });
 
+inventoryRouter.delete("/:id", async (request, response) => {
+  try {
+    const result = await pool.query(
+      `
+        DELETE FROM inventory_items
+        WHERE id = $1
+        RETURNING id;
+      `,
+      [request.params.id],
+    );
+
+    if (result.rowCount === 0) {
+      response.status(404).json({
+        message: "Inventory item not found.",
+      });
+
+      return;
+    }
+
+    response.status(204).send();
+  } catch (error) {
+    console.error("Failed to delete inventory item:", error);
+
+    response.status(500).json({
+      message: "Unable to delete inventory item.",
+    });
+  }
+});
+
 inventoryRouter.get("/", async (_request, response) => {
   try {
     const result = await pool.query(`
