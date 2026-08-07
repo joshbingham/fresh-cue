@@ -47,6 +47,8 @@ export default function InventoryDashboard() {
   const [itemBeingDeleted, setItemBeingDeleted] =
     useState<InventoryItem | null>(null);
 
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   useEffect(() => {
     async function loadInventory() {
       try {
@@ -253,21 +255,50 @@ export default function InventoryDashboard() {
     setItemBeingDeleted(item);
   }
 
-  function handleConfirmDelete() {
+  async function handleConfirmDelete(): Promise<void> {
     if (!itemBeingDeleted) {
       return;
     }
 
-    setInventory((currentInventory) =>
-      currentInventory.filter(
-        (item) => item.id !== itemBeingDeleted.id,
-      ),
-    );
+    setDeleteError(null);
 
-    setItemBeingDeleted(null);
+    try {
+      const response = await fetch(
+        `http://localhost:3001/inventory/${itemBeingDeleted.id}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (!response.ok) {
+        setDeleteError(
+          "Unable to delete this item. Please try again.",
+        );
+
+        return;
+      }
+
+      setInventory((currentInventory) =>
+        currentInventory.filter(
+          (item) => item.id !== itemBeingDeleted.id,
+        ),
+      );
+
+      setItemBeingDeleted(null);
+    } catch (error) {
+      console.error(
+        "Failed to delete inventory item:",
+        error,
+      );
+
+      setDeleteError(
+        "Unable to connect to the server. Please try again.",
+      );
+    }
   }
 
   function handleCancelDelete() {
+    setDeleteError(null);
     setItemBeingDeleted(null);
   }
 
@@ -384,6 +415,12 @@ export default function InventoryDashboard() {
                   This item will be removed from your inventory.
                 </p>
               </div>
+
+              {deleteError && (
+                <p className="form-error" role="alert">
+                  {deleteError}
+                </p>
+              )}
 
               <div className="delete-confirmation__actions">
                 <button
