@@ -7,7 +7,7 @@ import type {
 
 interface EditItemFormProps {
   item: InventoryItem;
-  onSave: (item: InventoryItem) => void;
+  onSave: (item: InventoryItem) => Promise<boolean>;
   onCancel: () => void;
 }
 
@@ -42,11 +42,14 @@ export default function EditItemForm({
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  function handleSubmit(
+  async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
+
+    setSaveError(null);
 
     const nextErrors: FormErrors = {};
 
@@ -75,7 +78,7 @@ export default function EditItemForm({
       return;
     }
 
-    onSave({
+    const wasSaved = await onSave({
       ...item,
       name: values.name.trim(),
       quantity: values.quantity,
@@ -83,8 +86,15 @@ export default function EditItemForm({
       expiryDate: values.expiryDate,
       storageLocation: values.storageLocation,
       status: values.status,
-      updatedAt: new Date().toISOString(),
     });
+
+    if (!wasSaved) {
+      setSaveError(
+        "Unable to save your changes. Please try again.",
+      );
+
+      return;
+    }
   }
 
   return (
@@ -280,6 +290,12 @@ export default function EditItemForm({
             <option value="expired">Expired</option>
           </select>
         </div>
+
+        {saveError && (
+          <p className="form-error" role="alert">
+            {saveError}
+          </p>
+        )}
 
         <button type="submit">
           Save changes
