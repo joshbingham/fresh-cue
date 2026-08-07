@@ -1,7 +1,163 @@
 import { Router } from "express";
 import { pool } from "../db.js";
 
+interface CreateInventoryItemBody {
+  name?: unknown;
+  quantity?: unknown;
+  quantity_unit?: unknown;
+  expiry_date?: unknown;
+  storage_location?: unknown;
+  status?: unknown;
+}
+
+const validQuantityUnits = [
+  "item",
+  "pack",
+  "g",
+  "kg",
+  "ml",
+  "l",
+] as const;
+
+const validStorageLocations = [
+  "fridge",
+  "freezer",
+  "cupboard",
+] as const;
+
+const validStatuses = [
+  "active",
+  "consumed",
+  "wasted",
+  "expired",
+] as const;
+
 export const inventoryRouter = Router();
+
+function validateCreateInventoryItem(
+  body: CreateInventoryItemBody,
+): string[] {
+  const errors: string[] = [];
+
+  if (
+    typeof body.name !== "string" ||
+    body.name.trim().length === 0
+  ) {
+    errors.push("Name is required.");
+  }
+
+  if (
+    typeof body.quantity !== "number" ||
+    !Number.isFinite(body.quantity) ||
+    body.quantity < 1
+  ) {
+    errors.push("Quantity must be a number of at least 1.");
+  }
+
+  if (
+    typeof body.quantity_unit !== "string" ||
+    !validQuantityUnits.includes(
+      body.quantity_unit as (typeof validQuantityUnits)[number],
+    )
+  ) {
+    errors.push("Quantity unit is invalid.");
+  }
+
+  if (
+    typeof body.expiry_date !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(body.expiry_date) ||
+    Number.isNaN(Date.parse(body.expiry_date))
+    ) {
+    errors.push("Expiry date must be a valid date in YYYY-MM-DD format.");
+    }
+
+  if (
+    typeof body.storage_location !== "string" ||
+    !validStorageLocations.includes(
+      body.storage_location as (typeof validStorageLocations)[number],
+    )
+  ) {
+    errors.push("Storage location is invalid.");
+  }
+
+  if (
+    body.status !== undefined &&
+    (
+      typeof body.status !== "string" ||
+      !validStatuses.includes(
+        body.status as (typeof validStatuses)[number],
+      )
+    )
+  ) {
+    errors.push("Status is invalid.");
+  }
+
+  return errors;
+}
+
+inventoryRouter.post("/", async (request, response) => {
+  const body = request.body as CreateInventoryItemBody;
+  const validationErrors = validateCreateInventoryItem(body);
+
+  if (validationErrors.length > 0) {
+    response.status(400).json({
+      errors: validationErrors,
+    });
+
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      `
+        INSERT INTO inventory_items (
+          id,
+          name,
+          quantity,
+          quantity_unit,
+          expiry_date,
+          storage_location,
+          status
+        )
+        VALUES (
+          gen_random_uuid(),
+          $1,
+          $2,
+          $3,
+          $4,
+          $5,
+          $6
+        )
+        RETURNING
+          id,
+          name,
+          quantity,
+          quantity_unit,
+          expiry_date,
+          storage_location,
+          status,
+          created_at,
+          updated_at;
+      `,
+      [
+        (body.name as string).trim(),
+        body.quantity,
+        body.quantity_unit,
+        body.expiry_date,
+        body.storage_location,
+        body.status ?? "active",
+      ],
+    );
+
+    response.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Failed to create inventory item:", error);
+
+    response.status(500).json({
+      message: "Unable to create inventory item.",
+    });
+  }
+});
 
 inventoryRouter.get("/", async (_request, response) => {
   try {
