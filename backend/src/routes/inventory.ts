@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { pool } from "../db.js";
 
-interface CreateInventoryItemBody {
+interface InventoryItemBody {
   name?: unknown;
   quantity?: unknown;
   quantity_unit?: unknown;
@@ -34,8 +34,8 @@ const validStatuses = [
 
 export const inventoryRouter = Router();
 
-function validateCreateInventoryItem(
-  body: CreateInventoryItemBody,
+function validateInventoryItem(
+  body: InventoryItemBody,
 ): string[] {
   const errors: string[] = [];
 
@@ -96,8 +96,8 @@ function validateCreateInventoryItem(
 }
 
 inventoryRouter.post("/", async (request, response) => {
-  const body = request.body as CreateInventoryItemBody;
-  const validationErrors = validateCreateInventoryItem(body);
+  const body = request.body as InventoryItemBody;
+  const validationErrors = validateInventoryItem(body);
 
   if (validationErrors.length > 0) {
     response.status(400).json({
@@ -155,6 +155,71 @@ inventoryRouter.post("/", async (request, response) => {
 
     response.status(500).json({
       message: "Unable to create inventory item.",
+    });
+  }
+});
+
+inventoryRouter.put("/:id", async (request, response) => {
+  const body = request.body as InventoryItemBody;
+  const validationErrors = validateInventoryItem(body);
+
+  if (validationErrors.length > 0) {
+    response.status(400).json({
+      errors: validationErrors,
+    });
+
+    return;
+  }
+
+  try {
+    const result = await pool.query(
+      `
+        UPDATE inventory_items
+        SET
+          name = $1,
+          quantity = $2,
+          quantity_unit = $3,
+          expiry_date = $4,
+          storage_location = $5,
+          status = $6,
+          updated_at = NOW()
+        WHERE id = $7
+        RETURNING
+          id,
+          name,
+          quantity,
+          quantity_unit,
+          expiry_date,
+          storage_location,
+          status,
+          created_at,
+          updated_at;
+      `,
+      [
+        (body.name as string).trim(),
+        body.quantity,
+        body.quantity_unit,
+        body.expiry_date,
+        body.storage_location,
+        body.status ?? "active",
+        request.params.id,
+      ],
+    );
+
+    if (result.rowCount === 0) {
+      response.status(404).json({
+        message: "Inventory item not found.",
+      });
+
+      return;
+    }
+
+    response.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error("Failed to update inventory item:", error);
+
+    response.status(500).json({
+      message: "Unable to update inventory item.",
     });
   }
 });
