@@ -20,10 +20,21 @@ interface InventoryApiItem {
   updated_at: string;
 }
 
+interface CreateInventoryItemRequest {
+  name: string;
+  quantity: number;
+  quantityUnit: InventoryItem["quantityUnit"];
+  expiryDate: string;
+  storageLocation: InventoryItem["storageLocation"];
+}
+
+
+
 export default function InventoryDashboard() {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [addItemError, setAddItemError] = useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -98,11 +109,79 @@ export default function InventoryDashboard() {
         new Date(`${b.expiryDate}T00:00:00`).getTime(),
     );
 
-  function handleAddItem(item: InventoryItem) {
-    setInventory((currentInventory) => [
-      item,
-      ...currentInventory,
-    ]);
+  async function handleAddItem(
+    item: CreateInventoryItemRequest,
+  ): Promise<boolean> {
+    setAddItemError(null);
+
+    try {
+      const response = await fetch(
+        "http://localhost:3001/inventory",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: item.name,
+            quantity: item.quantity,
+            quantity_unit: item.quantityUnit,
+            expiry_date: item.expiryDate,
+            storage_location: item.storageLocation,
+            status: "active",
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as {
+          errors?: string[];
+          message?: string;
+        };
+
+        const message =
+          errorData.errors?.join(" ") ??
+          errorData.message ??
+          "Unable to add this item. Please try again.";
+
+        setAddItemError(message);
+
+        return false;
+      }
+
+      const createdItem =
+        (await response.json()) as InventoryApiItem;
+
+      const mappedItem: InventoryItem = {
+        id: createdItem.id,
+        name: createdItem.name,
+        quantity: Number(createdItem.quantity),
+        quantityUnit: createdItem.quantity_unit,
+        expiryDate: createdItem.expiry_date.slice(0, 10),
+        storageLocation: createdItem.storage_location,
+        status: createdItem.status,
+        createdAt: createdItem.created_at,
+        updatedAt: createdItem.updated_at,
+      };
+
+      setInventory((currentInventory) => [
+        ...currentInventory,
+        mappedItem,
+      ]);
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Failed to create inventory item:",
+        error,
+      );
+
+      setAddItemError(
+        "Unable to connect to the server. Please try again.",
+      );
+
+      return false;
+    }
   }
 
   function handleEditItem(item: InventoryItem) {
@@ -196,6 +275,11 @@ export default function InventoryDashboard() {
         </div>
 
         <AddItemForm onAddItem={handleAddItem} />
+        {addItemError && (
+          <p className="form-error" role="alert">
+            {addItemError}
+          </p>
+        )}
       </section>
 
       {itemBeingEdited && (
