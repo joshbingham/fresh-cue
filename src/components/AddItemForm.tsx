@@ -2,7 +2,13 @@ import { useState, type FormEvent } from "react";
 import type { InventoryItem, StorageLocation } from "../types";
 
 interface AddItemFormProps {
-  onAddItem: (item: InventoryItem) => void;
+  onAddItem: (item: {
+    name: string;
+    quantity: number;
+    quantityUnit: InventoryItem["quantityUnit"];
+    expiryDate: string;
+    storageLocation: StorageLocation;
+  }) => Promise<boolean>;
 }
 
 interface FormValues {
@@ -37,7 +43,7 @@ export default function AddItemForm({
   const [errors, setErrors] =
     useState<FormErrors>({});
 
-  function handleSubmit(
+  async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
@@ -69,10 +75,7 @@ export default function AddItemForm({
       return;
     }
 
-    const now = new Date().toISOString();
-
-    const newItem: InventoryItem = {
-      id: crypto.randomUUID(),
+    const wasAdded = await onAddItem({
       name: values.name.trim(),
       quantity: values.quantity,
       quantityUnit:
@@ -80,12 +83,12 @@ export default function AddItemForm({
       expiryDate: values.expiryDate,
       storageLocation:
         values.storageLocation as StorageLocation,
-      status: "active",
-      createdAt: now,
-      updatedAt: now,
-    };
+    });
 
-    onAddItem(newItem);
+    if (!wasAdded) {
+      return;
+    }
+
     setValues(initialValues);
     setErrors({});
   }
