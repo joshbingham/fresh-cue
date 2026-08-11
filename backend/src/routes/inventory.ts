@@ -8,6 +8,9 @@ interface InventoryItemBody {
   expiry_date?: unknown;
   storage_location?: unknown;
   status?: unknown;
+  category?: unknown;
+  notes?: unknown;
+  brand?: unknown;
 }
 
 const validQuantityUnits = [
@@ -92,6 +95,29 @@ function validateInventoryItem(
     errors.push("Status is invalid.");
   }
 
+  if (
+    typeof body.category !== "string" ||
+    body.category.trim().length === 0
+  ) {
+    errors.push("Category is required.");
+  }
+
+  if (
+    body.notes !== undefined &&
+    body.notes !== null &&
+    typeof body.notes !== "string"
+  ) {
+    errors.push("Notes must be a string.");
+  }
+
+  if (
+    body.brand !== undefined &&
+    body.brand !== null &&
+    typeof body.brand !== "string"
+  ) {
+    errors.push("Brand must be a string.");
+  }
+
   return errors;
 }
 
@@ -117,7 +143,10 @@ inventoryRouter.post("/", async (request, response) => {
           quantity_unit,
           expiry_date,
           storage_location,
-          status
+          status,
+          category,
+          notes,
+          brand
         )
         VALUES (
           gen_random_uuid(),
@@ -126,7 +155,10 @@ inventoryRouter.post("/", async (request, response) => {
           $3,
           $4,
           $5,
-          $6
+          $6,
+          $7,
+          $8,
+          $9
         )
         RETURNING
           id,
@@ -137,7 +169,10 @@ inventoryRouter.post("/", async (request, response) => {
           storage_location,
           status,
           created_at,
-          updated_at;
+          updated_at,
+          category,
+          notes,
+          brand
       `,
       [
         (body.name as string).trim(),
@@ -146,6 +181,9 @@ inventoryRouter.post("/", async (request, response) => {
         body.expiry_date,
         body.storage_location,
         body.status ?? "active",
+        (body.category as string).trim(),
+        typeof body.notes === "string" ? body.notes.trim() : null,
+        typeof body.brand === "string" ? body.brand.trim() : null,
       ],
     );
 
@@ -182,8 +220,11 @@ inventoryRouter.put("/:id", async (request, response) => {
           expiry_date = $4,
           storage_location = $5,
           status = $6,
+          category = $7,
+          notes = $8,
+          brand = $9,
           updated_at = NOW()
-        WHERE id = $7
+        WHERE id = $10
         RETURNING
           id,
           name,
@@ -192,6 +233,9 @@ inventoryRouter.put("/:id", async (request, response) => {
           expiry_date,
           storage_location,
           status,
+          category,
+          notes,
+          brand,
           created_at,
           updated_at;
       `,
@@ -202,6 +246,9 @@ inventoryRouter.put("/:id", async (request, response) => {
         body.expiry_date,
         body.storage_location,
         body.status ?? "active",
+        (body.category as string).trim(),
+        typeof body.notes === "string" ? body.notes.trim() : null,
+        typeof body.brand === "string" ? body.brand.trim() : null,
         request.params.id,
       ],
     );
@@ -264,6 +311,9 @@ inventoryRouter.get("/", async (_request, response) => {
         expiry_date,
         storage_location,
         status,
+        category,
+        notes,
+        brand,
         created_at,
         updated_at
       FROM inventory_items

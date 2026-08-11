@@ -10,7 +10,7 @@ const currentDirectory = path.dirname(currentFilePath);
 async function runMigration(): Promise<void> {
   const migrationPath = path.resolve(
     currentDirectory,
-    "../../migrations/001_create_inventory_table.sql",
+    "../../migrations/002_add_inventory_item_details.sql",
   );
 
   const migrationSql = await readFile(
@@ -20,7 +20,7 @@ async function runMigration(): Promise<void> {
 
   try {
     await pool.query(migrationSql);
-    console.log("Inventory migration completed successfully");
+    console.log("Migration completed successfully");
   } catch (error) {
     console.error("Inventory migration failed:", error);
     process.exitCode = 1;

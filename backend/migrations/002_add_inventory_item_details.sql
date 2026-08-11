@@ -1,0 +1,4 @@
+ALTER TABLE inventory_items
+ADD COLUMN category TEXT NOT NULL DEFAULT 'other',
+ADD COLUMN notes TEXT,
+ADD COLUMN brand TEXT;
