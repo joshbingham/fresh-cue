@@ -27,7 +27,7 @@ export function RecipeSearch() {
   }
 
   if (error) {
-    return <p>{error}</p>;
+    return <p role="alert">{error}</p>;
   }
 
   if (recipes.length === 0) {
