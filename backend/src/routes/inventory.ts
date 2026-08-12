@@ -96,10 +96,13 @@ function validateInventoryItem(
   }
 
   if (
-    typeof body.category !== "string" ||
-    body.category.trim().length === 0
+    body.category !== undefined &&
+    (
+      typeof body.category !== "string" ||
+      body.category.trim().length === 0
+    )
   ) {
-    errors.push("Category is required.");
+    errors.push("Category is invalid.");
   }
 
   if (
@@ -181,7 +184,9 @@ inventoryRouter.post("/", async (request, response) => {
         body.expiry_date,
         body.storage_location,
         body.status ?? "active",
-        (body.category as string).trim(),
+        typeof body.category === "string"
+          ? body.category.trim()
+          : "other",
         typeof body.notes === "string" ? body.notes.trim() : null,
         typeof body.brand === "string" ? body.brand.trim() : null,
       ],
@@ -246,7 +251,9 @@ inventoryRouter.put("/:id", async (request, response) => {
         body.expiry_date,
         body.storage_location,
         body.status ?? "active",
-        (body.category as string).trim(),
+        typeof body.category === "string"
+          ? body.category.trim()
+          : "other",
         typeof body.notes === "string" ? body.notes.trim() : null,
         typeof body.brand === "string" ? body.brand.trim() : null,
         request.params.id,

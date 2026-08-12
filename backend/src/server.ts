@@ -3,6 +3,7 @@ import cors from "cors";
 import express from "express";
 import { testDatabaseConnection } from "./db.js";
 import { inventoryRouter } from "./routes/inventory.js";
+import { recipesRouter } from "./routes/recipes.js";
 
 const app = express();
 
@@ -17,6 +18,8 @@ app.use(
 app.use(express.json());
 
 app.use("/inventory", inventoryRouter);
+
+app.use("/recipes", recipesRouter);
 
 app.get("/health", (_request, response) => {
   response.status(200).json({
