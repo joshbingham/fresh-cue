@@ -11,6 +11,27 @@ interface SpoonacularRecipe {
   missedIngredients: SpoonacularIngredient[];
 }
 
+function normaliseIngredient(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/\s+/g, " ")
+    .replace(/\byoghurt\b/g, "yogurt");
+}
+
+function inventoryHasIngredient(
+  ingredientName: string,
+  inventoryNames: string[],
+): boolean {
+  const normalisedIngredient = normaliseIngredient(ingredientName);
+
+  return inventoryNames.some(
+    (inventoryName) =>
+      normaliseIngredient(inventoryName) === normalisedIngredient,
+  );
+}
+
 export async function searchRecipes(
   inventoryNames: string[],
 ): Promise<RecipeMatch[]> {
@@ -40,22 +61,42 @@ export async function searchRecipes(
 
   const data = (await response.json()) as SpoonacularRecipe[];
 
-  return data.map((recipe) => ({
-    id: String(recipe.id),
-    title: recipe.title,
-    ingredients: [
-      ...recipe.usedIngredients.map((ingredient) => ({
-        name: ingredient.name,
-      })),
-      ...recipe.missedIngredients.map((ingredient) => ({
-        name: ingredient.name,
-      })),
-    ],
-    availableIngredients: recipe.usedIngredients.map(
-      (ingredient) => ingredient.name,
-    ),
-    missingIngredients: recipe.missedIngredients.map(
-      (ingredient) => ingredient.name,
-    ),
-  }));
+  return data
+    .map((recipe) => ({
+      id: String(recipe.id),
+      title: recipe.title,
+      ingredients: [
+        ...recipe.usedIngredients.map((ingredient) => ({
+          name: ingredient.name,
+        })),
+        ...recipe.missedIngredients.map((ingredient) => ({
+          name: ingredient.name,
+        })),
+      ],
+      availableIngredients: recipe.usedIngredients
+        .filter((ingredient) =>
+          inventoryHasIngredient(ingredient.name, inventoryNames),
+        )
+        .map((ingredient) => ingredient.name),
+
+      missingIngredients: [
+        ...recipe.missedIngredients.map(
+          (ingredient) => ingredient.name,
+        ),
+        ...recipe.usedIngredients
+          .filter(
+            (ingredient) =>
+              !inventoryHasIngredient(
+                ingredient.name,
+                inventoryNames,
+              ),
+          )
+          .map((ingredient) => ingredient.name),
+      ],
+    }))
+    .sort(
+      (a, b) =>
+        a.missingIngredients.length -
+        b.missingIngredients.length,
+    );
 }
