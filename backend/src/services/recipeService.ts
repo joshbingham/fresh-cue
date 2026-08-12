@@ -1,47 +1,61 @@
-import type {
-  Recipe,
-  RecipeMatch,
-} from "../types/recipe.js";
-import { matchRecipeIngredients } from "../utils/matchRecipeIngredients.js";
+import type { RecipeMatch } from "../types/recipe.js";
 
-const recipes: Recipe[] = [
-  {
-    id: "scrambled-eggs",
-    title: "Scrambled Eggs",
-    ingredients: [
-      { name: "eggs" },
-      { name: "milk" },
-      { name: "butter" },
-    ],
-  },
-  {
-    id: "banana-yoghurt-bowl",
-    title: "Banana Yoghurt Bowl",
-    ingredients: [
-      { name: "bananas" },
-      { name: "greek yoghurt" },
-    ],
-  },
-  {
-    id: "turkey-sandwich",
-    title: "Turkey Sandwich",
-    ingredients: [
-      { name: "turkey" },
-      { name: "bread" },
-    ],
-  },
-];
+interface SpoonacularIngredient {
+  name: string;
+}
 
-export function searchRecipes(
+interface SpoonacularRecipe {
+  id: number;
+  title: string;
+  usedIngredients: SpoonacularIngredient[];
+  missedIngredients: SpoonacularIngredient[];
+}
+
+export async function searchRecipes(
   inventoryNames: string[],
-): RecipeMatch[] {
-  return recipes
-    .map((recipe) =>
-      matchRecipeIngredients(recipe, inventoryNames),
-    )
-    .sort(
-      (a, b) =>
-        a.missingIngredients.length -
-        b.missingIngredients.length,
+): Promise<RecipeMatch[]> {
+  const apiKey = process.env.SPOONACULAR_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("Spoonacular API key is not configured.");
+  }
+
+  const params = new URLSearchParams({
+    apiKey,
+    ingredients: inventoryNames.join(","),
+    number: "10",
+    ranking: "2",
+    ignorePantry: "true",
+  });
+
+  const response = await fetch(
+    `https://api.spoonacular.com/recipes/findByIngredients?${params}`,
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Spoonacular request failed with status ${response.status}.`,
     );
+  }
+
+  const data = (await response.json()) as SpoonacularRecipe[];
+
+  return data.map((recipe) => ({
+    id: String(recipe.id),
+    title: recipe.title,
+    ingredients: [
+      ...recipe.usedIngredients.map((ingredient) => ({
+        name: ingredient.name,
+      })),
+      ...recipe.missedIngredients.map((ingredient) => ({
+        name: ingredient.name,
+      })),
+    ],
+    availableIngredients: recipe.usedIngredients.map(
+      (ingredient) => ingredient.name,
+    ),
+    missingIngredients: recipe.missedIngredients.map(
+      (ingredient) => ingredient.name,
+    ),
+  }));
 }

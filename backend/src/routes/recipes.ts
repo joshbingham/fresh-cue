@@ -16,7 +16,7 @@ recipesRouter.get("/", async (_request, response) => {
       (item: { name: string }) => item.name,
     );
 
-    const recipes = searchRecipes(inventoryNames);
+    const recipes = await searchRecipes(inventoryNames);
 
     response.status(200).json(recipes);
   } catch (error) {
