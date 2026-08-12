@@ -5,6 +5,7 @@ import InventoryCard from "../components/InventoryCard";
 import InventorySummary from "../components/InventorySummary";
 import UseSoonSection from "../components/UseSoonSection";
 import type { InventoryItem } from "../types";
+import { RecipeSearch } from "../components/RecipeSearch";
 
 type StorageFilter = "all" | InventoryItem["storageLocation"];
 
@@ -449,6 +450,8 @@ export default function InventoryDashboard() {
         onEdit={handleEditItem}
         onDelete={handleDeleteItem}
       />
+
+      <RecipeSearch />
 
       <section
         className="all-inventory-section"
