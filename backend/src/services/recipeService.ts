@@ -53,6 +53,12 @@ export async function searchRecipes(
     `https://api.spoonacular.com/recipes/findByIngredients?${params}`,
   );
 
+  if (response.status === 402) {
+    throw new Error(
+      "Spoonacular API quota has been exhausted. Try again when the quota resets.",
+    );
+  }
+
   if (!response.ok) {
     throw new Error(
       `Spoonacular request failed with status ${response.status}.`,
