@@ -4,6 +4,8 @@ import express from "express";
 import { testDatabaseConnection } from "./db.js";
 import { inventoryRouter } from "./routes/inventory.js";
 import { recipesRouter } from "./routes/recipes.js";
+import { shoppingListRouter } from "./routes/shoppingList.js";
+
 
 const app = express();
 
@@ -20,6 +22,8 @@ app.use(express.json());
 app.use("/inventory", inventoryRouter);
 
 app.use("/recipes", recipesRouter);
+
+app.use("/shopping-list", shoppingListRouter);
 
 app.get("/health", (_request, response) => {
   response.status(200).json({

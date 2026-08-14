@@ -1,11 +1,73 @@
 import { useEffect, useState } from "react";
 import { getRecipes } from "../api/recipes";
 import type { RecipeMatch } from "../types/recipe";
+import {
+    addShoppingListItem,
+  getShoppingList,
+  type ShoppingListItem,
+} from "../api/shoppingList";
 
 export function RecipeSearch() {
   const [recipes, setRecipes] = useState<RecipeMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
+  const [newShoppingItem, setNewShoppingItem] = useState("");
+  
+
+    async function generateShoppingList(missingIngredients: string[]) {
+        const newIngredients = missingIngredients.filter(
+            (ingredient) =>
+            !shoppingList.some(
+                (item) => item.name.toLowerCase() === ingredient.toLowerCase(),
+            ),
+        );
+
+        try {
+            const createdItems = await Promise.all(
+            newIngredients.map((ingredient) =>
+                addShoppingListItem(ingredient),
+            ),
+            );
+
+            setShoppingList((currentList) => [
+            ...currentList,
+            ...createdItems,
+            ]);
+
+        } catch {
+            console.error("Unable to add recipe ingredients to shopping list.");
+        }
+    }
+
+    async function addShoppingItem() {
+        const trimmedItem = newShoppingItem.trim();
+
+        if (!trimmedItem) {
+            return;
+        }
+
+        const alreadyExists = shoppingList.some(
+            (item) => item.name.toLowerCase() === trimmedItem.toLowerCase()
+        );
+
+        if (alreadyExists) {
+            return;
+        }
+
+        try {
+            const createdItem = await addShoppingListItem(trimmedItem);
+
+            setShoppingList((currentList) => [
+            ...currentList,
+            createdItem,
+            ]);
+
+            setNewShoppingItem("");
+        } catch {
+            console.error("Unable to add shopping list item.");
+        }
+    }
 
   useEffect(() => {
     async function loadRecipes() {
@@ -21,6 +83,27 @@ export function RecipeSearch() {
 
     void loadRecipes();
   }, []);
+
+  useEffect(() => {
+    async function loadShoppingList() {
+        try {
+        const data = await getShoppingList();
+        setShoppingList(data);
+        } catch {
+        console.error("Unable to load shopping list.");
+        }
+    }
+
+    void loadShoppingList();
+    }, []);
+
+function areRecipeIngredientsAdded(missingIngredients: string[]) {
+  return missingIngredients.every((ingredient) =>
+    shoppingList.some(
+      (item) => item.name.toLowerCase() === ingredient.toLowerCase(),
+    ),
+  );
+}
 
   if (isLoading) {
     return <p>Finding recipes...</p>;
@@ -78,6 +161,7 @@ export function RecipeSearch() {
 
         <div className="recipe-list">
         {recipes.map((recipe) => (
+            
             <article
                 key={recipe.id}
                 className={
@@ -107,9 +191,75 @@ export function RecipeSearch() {
                 ? recipe.missingIngredients.join(", ")
                 : "Nothing — you have everything!"}
             </p>
+
+            {recipe.missingIngredients.length > 0 && (
+                <button
+                    type="button"
+                    className={
+                    areRecipeIngredientsAdded(recipe.missingIngredients)
+                        ? "recipe-card__shopping-button recipe-card__shopping-button--added"
+                        : "recipe-card__shopping-button"
+                    }
+                    onClick={() =>
+                    generateShoppingList(recipe.missingIngredients)
+                    }
+                    disabled={areRecipeIngredientsAdded(recipe.missingIngredients)}
+                >
+                    {areRecipeIngredientsAdded(recipe.missingIngredients)
+                    ? "Ingredients added"
+                    : "Add missing ingredients to shopping list"}
+                </button>
+                )}
             </article>
         ))}
         </div>
+        
+            <div className="shopping-list">
+                <div className="shopping-list__header">
+                    <div>
+                    <p className="inventory-summary__eyebrow">Plan ahead</p>
+                    <h2>Shopping list</h2>
+                    </div>
+
+                    <p className="shopping-list__count">
+                    {shoppingList.length} item{shoppingList.length === 1 ? "" : "s"}
+                    </p>
+                </div>
+
+                <form
+                    className="shopping-list__form"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        addShoppingItem();
+                    }}
+                    >
+                    <label htmlFor="shopping-item">Add item manually</label>
+
+                    <input
+                        id="shopping-item"
+                        type="text"
+                        value={newShoppingItem}
+                        onChange={(event) => setNewShoppingItem(event.target.value)}
+                    />
+
+                    <button type="submit">Add item</button>
+                    </form>
+
+    
+
+                {shoppingList.length > 0 ? (
+                    <ul className="shopping-list__items">
+                    {shoppingList.map((item) => (
+                        <li key={item.id} className="shopping-list__item">
+                            {item.name}
+                        </li>
+                    ))}
+                    </ul>
+                    ) : (
+                    <p>Your shopping list is empty.</p>
+                    )}
+            </div>
+            
     </section>
     );
 }
