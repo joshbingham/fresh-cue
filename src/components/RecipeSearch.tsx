@@ -16,9 +16,16 @@ export function RecipeSearch() {
   
 
     async function generateShoppingList(missingIngredients: string[]) {
-        const newIngredients = missingIngredients.filter(
+        const uniqueMissingIngredients = missingIngredients.filter(
+            (ingredient, index, ingredients) =>
+                ingredients.findIndex(
+                (item) => item.toLowerCase() === ingredient.toLowerCase(),
+                ) === index,
+            );
+
+            const newIngredients = uniqueMissingIngredients.filter(
             (ingredient) =>
-            !shoppingList.some(
+                !shoppingList.some(
                 (item) => item.name.toLowerCase() === ingredient.toLowerCase(),
             ),
         );
