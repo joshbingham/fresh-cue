@@ -13,6 +13,7 @@ interface EditItemFormProps {
 
 interface FormValues {
   name: string;
+  barcode: string;
   quantity: number;
   quantityUnit: InventoryItem["quantityUnit"];
   expiryDate: string;
@@ -22,6 +23,7 @@ interface FormValues {
 
 interface FormErrors {
   name?: string;
+  barcode?: string;
   quantity?: string;
   expiryDate?: string;
   storageLocation?: string;
@@ -34,6 +36,7 @@ export default function EditItemForm({
 }: EditItemFormProps) {
   const [values, setValues] = useState<FormValues>({
     name: item.name,
+    barcode: item.barcode ?? "",
     quantity: item.quantity,
     quantityUnit: item.quantityUnit,
     expiryDate: item.expiryDate,
@@ -55,6 +58,16 @@ export default function EditItemForm({
 
     if (!values.name.trim()) {
       nextErrors.name = "Enter an item name.";
+    }
+
+    const trimmedBarcode = values.barcode.trim();
+
+    if (
+      trimmedBarcode.length > 0 &&
+      !/^(?:\d{8}|\d{12,14})$/.test(trimmedBarcode)
+    ) {
+      nextErrors.barcode =
+        "Barcode must be 8, 12, 13 or 14 digits.";
     }
 
     if (values.quantity < 1) {
@@ -81,6 +94,7 @@ export default function EditItemForm({
     const wasSaved = await onSave({
       ...item,
       name: values.name.trim(),
+      barcode: values.barcode.trim() || undefined,
       quantity: values.quantity,
       quantityUnit: values.quantityUnit,
       expiryDate: values.expiryDate,
@@ -147,6 +161,39 @@ export default function EditItemForm({
               role="alert"
             >
               {errors.name}
+            </p>
+          )}
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="edit-item-barcode">
+            Barcode
+          </label>
+
+          <input
+            id="edit-item-barcode"
+            type="text"
+            inputMode="numeric"
+            value={values.barcode}
+            onChange={(event) =>
+              setValues((currentValues) => ({
+                ...currentValues,
+                barcode: event.target.value,
+              }))
+            }
+            placeholder="Optional"
+            aria-invalid={Boolean(errors.barcode)}
+            aria-describedby={
+              errors.barcode ? "edit-item-barcode-error" : undefined
+            }
+          />
+          {errors.barcode && (
+            <p
+              id="edit-item-barcode-error"
+              className="form-error"
+              role="alert"
+            >
+              {errors.barcode}
             </p>
           )}
         </div>

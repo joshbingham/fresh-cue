@@ -10,7 +10,7 @@ const currentDirectory = path.dirname(currentFilePath);
 async function runMigration(): Promise<void> {
   const migrationPath = path.resolve(
     currentDirectory,
-    "../../migrations/003_create_shopping_list_items.sql",
+    "../../migrations/004_add_inventory_barcode.sql",
   );
 
   const migrationSql = await readFile(
@@ -22,7 +22,7 @@ async function runMigration(): Promise<void> {
     await pool.query(migrationSql);
     console.log("Migration completed successfully");
   } catch (error) {
-    console.error("Shopping list items migration failed:", error);
+    console.error("Inventory barcode migration failed:", error);
     process.exitCode = 1;
   } finally {
     await pool.end();
