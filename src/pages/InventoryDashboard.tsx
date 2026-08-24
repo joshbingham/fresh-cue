@@ -12,6 +12,7 @@ type StorageFilter = "all" | InventoryItem["storageLocation"];
 interface InventoryApiItem {
   id: string;
   name: string;
+  barcode: string | null;
   quantity: string | number;
   quantity_unit: InventoryItem["quantityUnit"];
   expiry_date: string;
@@ -23,6 +24,7 @@ interface InventoryApiItem {
 
 interface CreateInventoryItemRequest {
   name: string;
+  barcode?: string;
   quantity: number;
   quantityUnit: InventoryItem["quantityUnit"];
   expiryDate: string;
@@ -68,6 +70,7 @@ export default function InventoryDashboard() {
         const mappedInventory: InventoryItem[] = data.map((item) => ({
           id: item.id,
           name: item.name,
+          barcode: item.barcode ?? undefined,
           quantity: Number(item.quantity),
           quantityUnit: item.quantity_unit,
           expiryDate: item.expiry_date.slice(0, 10),
@@ -127,6 +130,7 @@ export default function InventoryDashboard() {
           },
           body: JSON.stringify({
             name: item.name,
+            barcode: item.barcode,
             quantity: item.quantity,
             quantity_unit: item.quantityUnit,
             expiry_date: item.expiryDate,
@@ -158,6 +162,7 @@ export default function InventoryDashboard() {
       const mappedItem: InventoryItem = {
         id: createdItem.id,
         name: createdItem.name,
+        barcode: createdItem.barcode ?? undefined,
         quantity: Number(createdItem.quantity),
         quantityUnit: createdItem.quantity_unit,
         expiryDate: createdItem.expiry_date.slice(0, 10),
@@ -204,6 +209,7 @@ export default function InventoryDashboard() {
           },
           body: JSON.stringify({
             name: updatedItem.name,
+            barcode: updatedItem.barcode,
             quantity: updatedItem.quantity,
             quantity_unit: updatedItem.quantityUnit,
             expiry_date: updatedItem.expiryDate,
@@ -223,6 +229,7 @@ export default function InventoryDashboard() {
       const mappedItem: InventoryItem = {
         id: savedItem.id,
         name: savedItem.name,
+        barcode: savedItem.barcode ?? undefined,
         quantity: Number(savedItem.quantity),
         quantityUnit: savedItem.quantity_unit,
         expiryDate: savedItem.expiry_date.slice(0, 10),

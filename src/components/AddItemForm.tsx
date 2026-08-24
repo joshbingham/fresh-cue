@@ -4,6 +4,7 @@ import type { InventoryItem, StorageLocation } from "../types";
 interface AddItemFormProps {
   onAddItem: (item: {
     name: string;
+    barcode?: string;
     quantity: number;
     quantityUnit: InventoryItem["quantityUnit"];
     expiryDate: string;
@@ -13,6 +14,7 @@ interface AddItemFormProps {
 
 interface FormValues {
   name: string;
+  barcode: string;
   quantity: number;
   quantityUnit: string;
   expiryDate: string;
@@ -21,6 +23,7 @@ interface FormValues {
 
 interface FormErrors {
   name?: string;
+  barcode?: string;
   quantity?: string;
   expiryDate?: string;
   storageLocation?: string;
@@ -28,6 +31,7 @@ interface FormErrors {
 
 const initialValues: FormValues = {
   name: "",
+  barcode: "",
   quantity: 1,
   quantityUnit: "item",
   expiryDate: "",
@@ -54,6 +58,16 @@ export default function AddItemForm({
       nextErrors.name = "Enter an item name.";
     }
 
+    const trimmedBarcode = values.barcode.trim();
+
+    if (
+      trimmedBarcode.length > 0 &&
+      !/^(?:\d{8}|\d{12,14})$/.test(trimmedBarcode)
+    ) {
+      nextErrors.barcode =
+        "Barcode must be 8, 12, 13 or 14 digits.";
+    }
+
     if (values.quantity < 1) {
       nextErrors.quantity =
         "Quantity must be at least 1.";
@@ -77,6 +91,7 @@ export default function AddItemForm({
 
     const wasAdded = await onAddItem({
       name: values.name.trim(),
+      barcode: values.barcode.trim() || undefined,
       quantity: values.quantity,
       quantityUnit:
         values.quantityUnit as InventoryItem["quantityUnit"],
@@ -127,6 +142,40 @@ export default function AddItemForm({
             role="alert"
           >
             {errors.name}
+          </p>
+        )}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="item-barcode">
+          Barcode
+        </label>
+
+        <input
+          id="item-barcode"
+          type="text"
+          inputMode="numeric"
+          value={values.barcode}
+          onChange={(event) =>
+            setValues((currentValues) => ({
+              ...currentValues,
+              barcode: event.target.value,
+            }))
+          }
+          placeholder="Optional"
+          aria-invalid={Boolean(errors.barcode)}
+          aria-describedby={
+            errors.barcode ? "item-barcode-error" : undefined
+          }
+        />
+
+        {errors.barcode && (
+          <p
+            id="item-barcode-error"
+            className="form-error"
+            role="alert"
+          >
+            {errors.barcode}
           </p>
         )}
       </div>

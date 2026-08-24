@@ -11,6 +11,7 @@ interface InventoryItemBody {
   category?: unknown;
   notes?: unknown;
   brand?: unknown;
+  barcode?: unknown;
 }
 
 const validQuantityUnits = [
@@ -121,7 +122,31 @@ function validateInventoryItem(
     errors.push("Brand must be a string.");
   }
 
+  if (
+    body.barcode !== undefined &&
+    body.barcode !== null &&
+    (
+      typeof body.barcode !== "string" ||
+      (
+        body.barcode.trim().length > 0 &&
+        !/^(?:\d{8}|\d{12,14})$/.test(body.barcode.trim())
+      )
+    )
+  ) {
+    errors.push("Barcode must be 8, 12, 13 or 14 digits.");
+  }
+
   return errors;
+}
+
+function normalizeBarcode(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedBarcode = value.trim();
+
+  return trimmedBarcode.length > 0 ? trimmedBarcode : null;
 }
 
 inventoryRouter.post("/", async (request, response) => {
@@ -149,7 +174,8 @@ inventoryRouter.post("/", async (request, response) => {
           status,
           category,
           notes,
-          brand
+          brand,
+          barcode
         )
         VALUES (
           gen_random_uuid(),
@@ -161,7 +187,8 @@ inventoryRouter.post("/", async (request, response) => {
           $6,
           $7,
           $8,
-          $9
+          $9,
+          $10
         )
         RETURNING
           id,
@@ -175,7 +202,8 @@ inventoryRouter.post("/", async (request, response) => {
           updated_at,
           category,
           notes,
-          brand
+          brand,
+          barcode
       `,
       [
         (body.name as string).trim(),
@@ -189,6 +217,7 @@ inventoryRouter.post("/", async (request, response) => {
           : "other",
         typeof body.notes === "string" ? body.notes.trim() : null,
         typeof body.brand === "string" ? body.brand.trim() : null,
+        normalizeBarcode(body.barcode),
       ],
     );
 
@@ -228,8 +257,9 @@ inventoryRouter.put("/:id", async (request, response) => {
           category = $7,
           notes = $8,
           brand = $9,
+          barcode = $10,
           updated_at = NOW()
-        WHERE id = $10
+        WHERE id = $11
         RETURNING
           id,
           name,
@@ -241,6 +271,7 @@ inventoryRouter.put("/:id", async (request, response) => {
           category,
           notes,
           brand,
+          barcode,
           created_at,
           updated_at;
       `,
@@ -256,6 +287,7 @@ inventoryRouter.put("/:id", async (request, response) => {
           : "other",
         typeof body.notes === "string" ? body.notes.trim() : null,
         typeof body.brand === "string" ? body.brand.trim() : null,
+        normalizeBarcode(body.barcode),
         request.params.id,
       ],
     );
@@ -321,6 +353,7 @@ inventoryRouter.get("/", async (_request, response) => {
         category,
         notes,
         brand,
+        barcode,
         created_at,
         updated_at
       FROM inventory_items
