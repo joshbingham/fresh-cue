@@ -1,5 +1,9 @@
-import { useState, type FormEvent } from "react";
-import type { InventoryItem, StorageLocation } from "../types";
+import { useRef, useState, type FormEvent } from "react";
+import type {
+  InventoryItem,
+  ProductLookupResult,
+  StorageLocation,
+} from "../types";
 
 interface AddItemFormProps {
   onAddItem: (item: {
@@ -29,6 +33,13 @@ interface FormErrors {
   storageLocation?: string;
 }
 
+type ProductLookupStatus =
+  | "idle"
+  | "loading"
+  | "success"
+  | "not-found"
+  | "error";
+
 const initialValues: FormValues = {
   name: "",
   barcode: "",
@@ -38,6 +49,8 @@ const initialValues: FormValues = {
   storageLocation: "",
 };
 
+const barcodePattern = /^(?:\d{8}|\d{12,14})$/;
+
 export default function AddItemForm({
   onAddItem,
 }: AddItemFormProps) {
@@ -46,6 +59,120 @@ export default function AddItemForm({
 
   const [errors, setErrors] =
     useState<FormErrors>({});
+
+  const [productLookupStatus, setProductLookupStatus] =
+    useState<ProductLookupStatus>("idle");
+
+  const [lookedUpProduct, setLookedUpProduct] =
+    useState<ProductLookupResult | null>(null);
+
+  const [productLookupMessage, setProductLookupMessage] =
+    useState<string | null>(null);
+
+  const lookupAbortControllerRef =
+    useRef<AbortController | null>(null);
+
+  function handleBarcodeChange(barcode: string): void {
+    setValues((currentValues) => ({
+      ...currentValues,
+      barcode,
+    }));
+
+    lookupAbortControllerRef.current?.abort();
+    lookupAbortControllerRef.current = null;
+
+    setErrors((currentErrors) => ({
+      ...currentErrors,
+      barcode: undefined,
+    }));
+
+    setLookedUpProduct(null);
+    setProductLookupMessage(null);
+    setProductLookupStatus("idle");
+  }
+
+  async function handleProductLookup(): Promise<void> {
+    const trimmedBarcode = values.barcode.trim();
+
+    setLookedUpProduct(null);
+    setProductLookupMessage(null);
+
+    if (!trimmedBarcode) {
+      setErrors((currentErrors) => ({
+        ...currentErrors,
+        barcode: "Enter a barcode to look up.",
+      }));
+
+      setProductLookupStatus("idle");
+      return;
+    }
+
+    if (!barcodePattern.test(trimmedBarcode)) {
+      setErrors((currentErrors) => ({
+        ...currentErrors,
+        barcode: "Barcode must be 8, 12, 13 or 14 digits.",
+      }));
+
+      setProductLookupStatus("idle");
+      return;
+    }
+
+    setErrors((currentErrors) => ({
+      ...currentErrors,
+      barcode: undefined,
+    }));
+
+    lookupAbortControllerRef.current?.abort();
+
+    const controller = new AbortController();
+    lookupAbortControllerRef.current = controller;
+
+    setProductLookupStatus("loading");
+
+    try {
+      const response = await fetch(
+        `http://localhost:3001/products/${encodeURIComponent(trimmedBarcode)}`,
+        {
+          signal: controller.signal,
+        },
+      );
+
+      if (response.status === 404) {
+        setProductLookupStatus("not-found");
+        setProductLookupMessage(
+          "No product was found for this barcode. You can still enter the item manually.",
+        );
+
+        return;
+      }
+
+      if (!response.ok) {
+        setProductLookupStatus("error");
+        setProductLookupMessage(
+          "Unable to look up this product right now. You can still enter the item manually.",
+        );
+
+        return;
+      }
+
+      const product =
+        (await response.json()) as ProductLookupResult;
+
+      setLookedUpProduct(product);
+      setProductLookupStatus("success");
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        return;
+      }
+
+      console.error("Failed to look up product:", error);
+
+      setProductLookupStatus("error");
+      setProductLookupMessage(
+        "Unable to connect to the product lookup service. You can still enter the item manually.",
+      );
+    }
+  }
 
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
@@ -62,7 +189,7 @@ export default function AddItemForm({
 
     if (
       trimmedBarcode.length > 0 &&
-      !/^(?:\d{8}|\d{12,14})$/.test(trimmedBarcode)
+      !barcodePattern.test(trimmedBarcode)
     ) {
       nextErrors.barcode =
         "Barcode must be 8, 12, 13 or 14 digits.";
@@ -104,8 +231,14 @@ export default function AddItemForm({
       return;
     }
 
+    lookupAbortControllerRef.current?.abort();
+    lookupAbortControllerRef.current = null;
+
     setValues(initialValues);
     setErrors({});
+    setLookedUpProduct(null);
+    setProductLookupMessage(null);
+    setProductLookupStatus("idle");
   }
 
   return (
@@ -157,10 +290,7 @@ export default function AddItemForm({
           inputMode="numeric"
           value={values.barcode}
           onChange={(event) =>
-            setValues((currentValues) => ({
-              ...currentValues,
-              barcode: event.target.value,
-            }))
+            handleBarcodeChange(event.target.value)
           }
           placeholder="Optional"
           aria-invalid={Boolean(errors.barcode)}
@@ -177,6 +307,49 @@ export default function AddItemForm({
           >
             {errors.barcode}
           </p>
+        )}
+
+        <button
+          type="button"
+          onClick={handleProductLookup}
+          disabled={productLookupStatus === "loading"}
+        >
+          {productLookupStatus === "loading"
+            ? "Looking up..."
+            : "Look up product"}
+        </button>
+
+        {productLookupMessage && (
+          <p
+            role={productLookupStatus === "error" ? "alert" : "status"}
+            aria-live="polite"
+          >
+            {productLookupMessage}
+          </p>
+        )}
+
+        {productLookupStatus === "success" && lookedUpProduct && (
+          <div aria-live="polite">
+            <p>
+              <strong>Product found</strong>
+            </p>
+
+            <p>
+              {lookedUpProduct.productName ?? "Unnamed product"}
+            </p>
+
+            {lookedUpProduct.brand && (
+              <p>Brand: {lookedUpProduct.brand}</p>
+            )}
+
+            {lookedUpProduct.category && (
+              <p>Category: {lookedUpProduct.category}</p>
+            )}
+
+            {lookedUpProduct.quantity && (
+              <p>Quantity: {lookedUpProduct.quantity}</p>
+            )}
+          </div>
         )}
       </div>
 
