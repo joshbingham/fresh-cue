@@ -420,6 +420,42 @@ dd {
   outline-offset: 2px;
 }
 
+/* Barcode scanner */
+
+.barcode-scanner {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 1rem;
+  background: #f4f7f2;
+  border: 1px solid #dce5d8;
+  border-radius: 0.75rem;
+  grid-column: 1 / -1;
+}
+
+.barcode-scanner p {
+  line-height: 1.5;
+}
+
+.barcode-scanner video {
+  display: block;
+  width: 100%;
+  max-width: 32rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: #1f2933;
+  border-radius: 0.65rem;
+}
+
+.barcode-scanner video[hidden] {
+  display: none;
+}
+
+.barcode-scanner button {
+  width: auto;
+  justify-self: start;
+}
+
 /* Edit modal */
 
 .modal-backdrop {

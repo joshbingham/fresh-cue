@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from "react";
+import BarcodeScanner from "./BarcodeScanner";
 import type {
   InventoryItem,
   ProductLookupResult,
@@ -199,6 +200,12 @@ export default function AddItemForm({
   const [productLookupMessage, setProductLookupMessage] =
     useState<string | null>(null);
 
+  const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] =
+    useState(false);
+
+  const [scanMessage, setScanMessage] =
+    useState<string | null>(null);
+
   const lookupAbortControllerRef =
     useRef<AbortController | null>(null);
 
@@ -211,6 +218,7 @@ export default function AddItemForm({
   });
 
   function handleBarcodeChange(barcode: string): void {
+    setScanMessage(null);
     setValues((currentValues) => ({
       ...currentValues,
       barcode,
@@ -253,8 +261,23 @@ export default function AddItemForm({
     setProductLookupStatus("idle");
   }
 
-  async function handleProductLookup(): Promise<void> {
-    const trimmedBarcode = values.barcode.trim();
+  function handleStartBarcodeScan(): void {
+    lookupAbortControllerRef.current?.abort();
+    lookupAbortControllerRef.current = null;
+
+    setScanMessage(null);
+    setLookedUpProduct(null);
+    setProductLookupMessage(null);
+    setProductLookupStatus("idle");
+    setIsBarcodeScannerOpen(true);
+  }
+
+  async function handleProductLookup(
+    barcodeOverride?: string,
+  ): Promise<void> {
+    const trimmedBarcode = (
+      barcodeOverride ?? values.barcode
+    ).trim();
 
     setLookedUpProduct(null);
     setProductLookupMessage(null);
@@ -378,6 +401,18 @@ export default function AddItemForm({
     }
   }
 
+  function handleScannedBarcode(barcode: string): void {
+    handleBarcodeChange(barcode);
+    setIsBarcodeScannerOpen(false);
+    setScanMessage(`Barcode captured: ${barcode}`);
+
+    void handleProductLookup(barcode);
+  }
+
+  function handleCancelBarcodeScan(): void {
+    setIsBarcodeScannerOpen(false);
+  }
+
   async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
   ) {
@@ -445,6 +480,8 @@ export default function AddItemForm({
     setLookedUpProduct(null);
     setProductLookupMessage(null);
     setProductLookupStatus("idle");
+    setScanMessage(null);
+    setIsBarcodeScannerOpen(false);
 
     prefillTouchedFieldsRef.current = {
       name: false,
@@ -564,13 +601,27 @@ export default function AddItemForm({
 
         <button
           type="button"
-          onClick={handleProductLookup}
+          onClick={() => void handleProductLookup()}
           disabled={productLookupStatus === "loading"}
         >
           {productLookupStatus === "loading"
             ? "Looking up..."
             : "Look up product"}
         </button>
+
+        <button
+          type="button"
+          onClick={handleStartBarcodeScan}
+        >
+          Scan barcode
+        </button>
+
+
+        {scanMessage && (
+          <p role="status" aria-live="polite">
+            {scanMessage}
+          </p>
+        )}
 
         {productLookupMessage && (
           <p
@@ -605,6 +656,13 @@ export default function AddItemForm({
           </div>
         )}
       </div>
+
+      {isBarcodeScannerOpen && (
+        <BarcodeScanner
+          onDetected={handleScannedBarcode}
+          onCancel={handleCancelBarcodeScan}
+        />
+      )}
 
       <div className="form-field">
         <label htmlFor="item-quantity">
