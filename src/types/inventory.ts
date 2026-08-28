@@ -18,6 +18,8 @@ export interface InventoryItem {
   id: string;
   name: string;
   barcode?: string;
+  brand?: string;
+  category: string;
   quantity: number;
   quantityUnit: QuantityUnit;
   expiryDate: string;

@@ -14,6 +14,8 @@ interface EditItemFormProps {
 interface FormValues {
   name: string;
   barcode: string;
+  brand: string;
+  category: string;
   quantity: number;
   quantityUnit: InventoryItem["quantityUnit"];
   expiryDate: string;
@@ -37,6 +39,8 @@ export default function EditItemForm({
   const [values, setValues] = useState<FormValues>({
     name: item.name,
     barcode: item.barcode ?? "",
+    brand: item.brand ?? "",
+    category: item.category ?? "other",
     quantity: item.quantity,
     quantityUnit: item.quantityUnit,
     expiryDate: item.expiryDate,
@@ -95,6 +99,8 @@ export default function EditItemForm({
       ...item,
       name: values.name.trim(),
       barcode: values.barcode.trim() || undefined,
+      brand: values.brand.trim() || undefined,
+      category: values.category.trim() || "other",
       quantity: values.quantity,
       quantityUnit: values.quantityUnit,
       expiryDate: values.expiryDate,
@@ -163,6 +169,43 @@ export default function EditItemForm({
               {errors.name}
             </p>
           )}
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="edit-item-brand">
+            Brand
+          </label>
+
+          <input
+            id="edit-item-brand"
+            type="text"
+            value={values.brand}
+            onChange={(event) =>
+              setValues((currentValues) => ({
+                ...currentValues,
+                brand: event.target.value,
+              }))
+            }
+            placeholder="Optional"
+          />
+        </div>
+
+        <div className="form-field">
+          <label htmlFor="edit-item-category">
+            Category
+          </label>
+
+          <input
+            id="edit-item-category"
+            type="text"
+            value={values.category}
+            onChange={(event) =>
+              setValues((currentValues) => ({
+                ...currentValues,
+                category: event.target.value,
+              }))
+            }
+          />
         </div>
 
         <div className="form-field">

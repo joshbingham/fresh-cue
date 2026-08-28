@@ -9,6 +9,8 @@ interface AddItemFormProps {
   onAddItem: (item: {
     name: string;
     barcode?: string;
+    brand?: string;
+    category: string;
     quantity: number;
     quantityUnit: InventoryItem["quantityUnit"];
     expiryDate: string;
@@ -19,6 +21,8 @@ interface AddItemFormProps {
 interface FormValues {
   name: string;
   barcode: string;
+  brand: string;
+  category: string;
   quantity: number;
   quantityUnit: string;
   expiryDate: string;
@@ -43,6 +47,8 @@ type ProductLookupStatus =
 const initialValues: FormValues = {
   name: "",
   barcode: "",
+  brand: "",
+  category: "other",
   quantity: 1,
   quantityUnit: "item",
   expiryDate: "",
@@ -50,6 +56,130 @@ const initialValues: FormValues = {
 };
 
 const barcodePattern = /^(?:\d{8}|\d{12,14})$/;
+
+function suggestFreshCueCategory(
+  product: ProductLookupResult,
+): string | null {
+  const searchableText = [
+    product.productName,
+    product.category,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    /\b(milk|yoghurt|yogurt|cheese|cream|butter|dairy)\b/.test(
+      searchableText,
+    )
+  ) {
+    return "dairy";
+  }
+
+  if (
+    /\b(apple|banana|orange|berry|berries|grape|pear|fruit)\b/.test(
+      searchableText,
+    )
+  ) {
+    return "fruit";
+  }
+
+  if (
+    /\b(vegetable|vegetables|carrot|broccoli|pepper|onion|tomato)\b/.test(
+      searchableText,
+    )
+  ) {
+    return "vegetables";
+  }
+
+  if (
+    /\b(chicken|turkey|beef|pork|lamb|meat)\b/.test(
+      searchableText,
+    )
+  ) {
+    return "meat";
+  }
+
+  if (
+    /\b(fish|salmon|tuna|cod|seafood)\b/.test(
+      searchableText,
+    )
+  ) {
+    return "fish";
+  }
+
+  if (
+    /\b(bread|roll|bagel|bakery)\b/.test(
+      searchableText,
+    )
+  ) {
+    return "bakery";
+  }
+
+  if (
+    /\b(spread|confectionery|confectionary|pasta|rice|cereal|flour|sauce|beans|tin|canned)\b/.test(
+      searchableText,
+    )
+  ) {
+    return "pantry";
+  }
+
+  return null;
+}
+
+function parsePackageQuantity(
+  quantity: string | null,
+): {
+  quantity: number;
+  quantityUnit: InventoryItem["quantityUnit"];
+} | null {
+  if (!quantity) {
+    return null;
+  }
+
+  const match = quantity
+    .trim()
+    .toLowerCase()
+    .match(/^(\d+(?:[.,]\d+)?)\s*(g|kg|ml|l)$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const numericQuantity = Number(
+    match[1].replace(",", "."),
+  );
+
+  const unit =
+    match[2] as InventoryItem["quantityUnit"];
+
+  if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
+    return null;
+  }
+
+  if (unit === "kg" && numericQuantity < 1) {
+    return {
+      quantity: numericQuantity * 1000,
+      quantityUnit: "g",
+    };
+  }
+
+  if (unit === "l" && numericQuantity < 1) {
+    return {
+      quantity: numericQuantity * 1000,
+      quantityUnit: "ml",
+    };
+  }
+
+  if (numericQuantity < 1) {
+    return null;
+  }
+
+  return {
+    quantity: numericQuantity,
+    quantityUnit: unit,
+  };
+}
 
 export default function AddItemForm({
   onAddItem,
@@ -72,10 +202,42 @@ export default function AddItemForm({
   const lookupAbortControllerRef =
     useRef<AbortController | null>(null);
 
+  const prefillTouchedFieldsRef = useRef({
+    name: false,
+    brand: false,
+    category: false,
+    quantity: false,
+    quantityUnit: false,
+  });
+
   function handleBarcodeChange(barcode: string): void {
     setValues((currentValues) => ({
       ...currentValues,
       barcode,
+
+      name: prefillTouchedFieldsRef.current.name
+        ? currentValues.name
+        : "",
+
+      brand: prefillTouchedFieldsRef.current.brand
+        ? currentValues.brand
+        : "",
+
+      category: prefillTouchedFieldsRef.current.category
+        ? currentValues.category
+        : "other",
+
+      quantity:
+        prefillTouchedFieldsRef.current.quantity ||
+        prefillTouchedFieldsRef.current.quantityUnit
+          ? currentValues.quantity
+          : 1,
+
+      quantityUnit:
+        prefillTouchedFieldsRef.current.quantity ||
+        prefillTouchedFieldsRef.current.quantityUnit
+          ? currentValues.quantityUnit
+          : "item",
     }));
 
     lookupAbortControllerRef.current?.abort();
@@ -158,7 +320,49 @@ export default function AddItemForm({
       const product =
         (await response.json()) as ProductLookupResult;
 
+      const productName = product.productName?.trim() ?? "";
+      const productBrand = product.brand?.trim() ?? "";
+
+      const suggestedCategory =
+        suggestFreshCueCategory(product);
+
+      const parsedPackageQuantity =
+        parsePackageQuantity(product.quantity);
+
       setLookedUpProduct(product);
+
+      setValues((currentValues) => ({
+        ...currentValues,
+        name: prefillTouchedFieldsRef.current.name
+          ? currentValues.name
+          : productName || currentValues.name,
+        brand: prefillTouchedFieldsRef.current.brand
+          ? currentValues.brand
+          : productBrand || currentValues.brand,
+        category: prefillTouchedFieldsRef.current.category
+          ? currentValues.category
+          : suggestedCategory ?? currentValues.category,
+        quantity:
+          parsedPackageQuantity &&
+          !prefillTouchedFieldsRef.current.quantity &&
+          !prefillTouchedFieldsRef.current.quantityUnit
+            ? parsedPackageQuantity.quantity
+            : currentValues.quantity,
+        quantityUnit:
+          parsedPackageQuantity &&
+          !prefillTouchedFieldsRef.current.quantity &&
+          !prefillTouchedFieldsRef.current.quantityUnit
+            ? parsedPackageQuantity.quantityUnit
+            : currentValues.quantityUnit,
+      }));
+
+      if (productName) {
+        setErrors((currentErrors) => ({
+          ...currentErrors,
+          name: undefined,
+        }));
+      }
+
       setProductLookupStatus("success");
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
@@ -219,6 +423,8 @@ export default function AddItemForm({
     const wasAdded = await onAddItem({
       name: values.name.trim(),
       barcode: values.barcode.trim() || undefined,
+      brand: values.brand.trim() || undefined,
+      category: values.category.trim() || "other",
       quantity: values.quantity,
       quantityUnit:
         values.quantityUnit as InventoryItem["quantityUnit"],
@@ -239,6 +445,14 @@ export default function AddItemForm({
     setLookedUpProduct(null);
     setProductLookupMessage(null);
     setProductLookupStatus("idle");
+
+    prefillTouchedFieldsRef.current = {
+      name: false,
+      brand: false,
+      category: false,
+      quantity: false,
+      quantityUnit: false,
+    };
   }
 
   return (
@@ -254,12 +468,14 @@ export default function AddItemForm({
           id="item-name"
           type="text"
           value={values.name}
-          onChange={(event) =>
+          onChange={(event) => {
+            prefillTouchedFieldsRef.current.name = true;
+
             setValues((currentValues) => ({
               ...currentValues,
               name: event.target.value,
-            }))
-          }
+            }));
+          }}
           aria-invalid={Boolean(errors.name)}
           aria-describedby={
             errors.name
@@ -277,6 +493,43 @@ export default function AddItemForm({
             {errors.name}
           </p>
         )}
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="item-brand">Brand</label>
+
+        <input
+          id="item-brand"
+          type="text"
+          value={values.brand}
+          onChange={(event) => {
+            prefillTouchedFieldsRef.current.brand = true;
+
+            setValues((currentValues) => ({
+              ...currentValues,
+              brand: event.target.value,
+            }));
+          }}
+          placeholder="Optional"
+        />
+      </div>
+
+      <div className="form-field">
+        <label htmlFor="item-category">Category</label>
+
+        <input
+          id="item-category"
+          type="text"
+          value={values.category}
+          onChange={(event) => {
+            prefillTouchedFieldsRef.current.category = true;
+
+            setValues((currentValues) => ({
+              ...currentValues,
+              category: event.target.value,
+            }));
+          }}
+        />
       </div>
 
       <div className="form-field">
@@ -363,12 +616,14 @@ export default function AddItemForm({
           type="number"
           min="1"
           value={values.quantity}
-          onChange={(event) =>
+          onChange={(event) => {
+            prefillTouchedFieldsRef.current.quantity = true;
+
             setValues((currentValues) => ({
               ...currentValues,
               quantity: Number(event.target.value),
-            }))
-          }
+            }));
+          }}
           aria-invalid={Boolean(errors.quantity)}
           aria-describedby={
             errors.quantity
@@ -394,12 +649,14 @@ export default function AddItemForm({
         <select
           id="item-unit"
           value={values.quantityUnit}
-          onChange={(event) =>
+          onChange={(event) => {
+            prefillTouchedFieldsRef.current.quantityUnit = true;
+
             setValues((currentValues) => ({
               ...currentValues,
               quantityUnit: event.target.value,
-            }))
-          }
+            }));
+          }}
         >
           <option value="item">Item</option>
           <option value="pack">Pack</option>
