@@ -5,6 +5,7 @@ export const sampleInventory: InventoryItem[] = [
     id: "1",
     name: "Milk",
     barcode: "5000123456789",
+    category: "dairy",
     quantity: 1,
     quantityUnit: "l",
     expiryDate: "2026-08-04",
@@ -16,6 +17,7 @@ export const sampleInventory: InventoryItem[] = [
   {
     id: "2",
     name: "Chicken breasts",
+    category: "meat",
     quantity: 2,
     quantityUnit: "item",
     expiryDate: "2026-08-05",
@@ -27,6 +29,7 @@ export const sampleInventory: InventoryItem[] = [
   {
     id: "3",
     name: "Cheddar cheese",
+    category: "dairy",
     quantity: 1,
     quantityUnit: "pack",
     expiryDate: "2026-08-12",
@@ -38,6 +41,7 @@ export const sampleInventory: InventoryItem[] = [
   {
     id: "4",
     name: "Frozen peas",
+    category: "vegetables",
     quantity: 500,
     quantityUnit: "g",
     expiryDate: "2027-01-15",
@@ -49,6 +53,7 @@ export const sampleInventory: InventoryItem[] = [
   {
     id: "5",
     name: "Pasta",
+    category: "pantry",
     quantity: 1,
     quantityUnit: "pack",
     expiryDate: "2027-04-20",

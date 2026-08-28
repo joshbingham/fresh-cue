@@ -13,6 +13,8 @@ interface InventoryApiItem {
   id: string;
   name: string;
   barcode: string | null;
+  brand: string | null;
+  category: string;
   quantity: string | number;
   quantity_unit: InventoryItem["quantityUnit"];
   expiry_date: string;
@@ -25,6 +27,8 @@ interface InventoryApiItem {
 interface CreateInventoryItemRequest {
   name: string;
   barcode?: string;
+  brand?: string;
+  category: string;
   quantity: number;
   quantityUnit: InventoryItem["quantityUnit"];
   expiryDate: string;
@@ -71,6 +75,8 @@ export default function InventoryDashboard() {
           id: item.id,
           name: item.name,
           barcode: item.barcode ?? undefined,
+          brand: item.brand ?? undefined,
+          category: item.category,
           quantity: Number(item.quantity),
           quantityUnit: item.quantity_unit,
           expiryDate: item.expiry_date.slice(0, 10),
@@ -131,6 +137,8 @@ export default function InventoryDashboard() {
           body: JSON.stringify({
             name: item.name,
             barcode: item.barcode,
+            brand: item.brand,
+            category: item.category,
             quantity: item.quantity,
             quantity_unit: item.quantityUnit,
             expiry_date: item.expiryDate,
@@ -163,6 +171,8 @@ export default function InventoryDashboard() {
         id: createdItem.id,
         name: createdItem.name,
         barcode: createdItem.barcode ?? undefined,
+        brand: createdItem.brand ?? undefined,
+        category: createdItem.category,
         quantity: Number(createdItem.quantity),
         quantityUnit: createdItem.quantity_unit,
         expiryDate: createdItem.expiry_date.slice(0, 10),
@@ -210,6 +220,8 @@ export default function InventoryDashboard() {
           body: JSON.stringify({
             name: updatedItem.name,
             barcode: updatedItem.barcode,
+            brand: updatedItem.brand,
+            category: updatedItem.category,
             quantity: updatedItem.quantity,
             quantity_unit: updatedItem.quantityUnit,
             expiry_date: updatedItem.expiryDate,
@@ -230,6 +242,8 @@ export default function InventoryDashboard() {
         id: savedItem.id,
         name: savedItem.name,
         barcode: savedItem.barcode ?? undefined,
+        brand: savedItem.brand ?? undefined,
+        category: savedItem.category,
         quantity: Number(savedItem.quantity),
         quantityUnit: savedItem.quantity_unit,
         expiryDate: savedItem.expiry_date.slice(0, 10),
