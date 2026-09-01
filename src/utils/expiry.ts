@@ -158,3 +158,35 @@ export function parseExpiryDate(
 
   return null;
 }
+
+export function extractExpiryDateCandidates(
+  text: string,
+): string[] {
+  const candidates: string[] = [];
+
+  const patterns = [
+    /\b\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\b/g,
+    /\b\d{1,2}[-/.]\d{1,2}[-/.](?:\d{2}|\d{4})\b/g,
+    /\b\d{1,2}\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(?:\d{2}|\d{4})\b/gi,
+  ];
+
+  for (const pattern of patterns) {
+    const matches = text.match(pattern);
+
+    if (!matches) {
+      continue;
+    }
+
+    for (const match of matches) {
+      const normalised = match
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!candidates.includes(normalised)) {
+        candidates.push(normalised);
+      }
+    }
+  }
+
+  return candidates;
+}

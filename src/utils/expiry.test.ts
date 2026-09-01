@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  extractExpiryDateCandidates,
   getDaysUntilExpiry,
   getExpiryUrgency,
   parseExpiryDate,
@@ -122,5 +123,98 @@ describe("parseExpiryDate", () => {
 
   it("rejects years after the supported range", () => {
     expect(parseExpiryDate("05/09/2101")).toBeNull();
+  });
+});
+
+describe("extractExpiryDateCandidates", () => {
+  it("extracts a numeric date from surrounding packaging text", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "USE BY 05/09/2026 LOT 12345",
+      ),
+    ).toEqual(["05/09/2026"]);
+  });
+
+  it("extracts a named-month date", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "BEST BEFORE 05 SEP 2026",
+      ),
+    ).toEqual(["05 SEP 2026"]);
+  });
+
+  it("extracts a date split across OCR whitespace", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "BEST BEFORE\n05   SEP   2026\nLOT 123",
+      ),
+    ).toEqual(["05 SEP 2026"]);
+  });
+
+  it("extracts an ISO-style date", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "Expiry: 2026-09-05",
+      ),
+    ).toEqual(["2026-09-05"]);
+  });
+
+  it("extracts multiple candidate dates", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "PACKED 01/09/2026 USE BY 05/09/2026",
+      ),
+    ).toEqual([
+      "01/09/2026",
+      "05/09/2026",
+    ]);
+  });
+
+  it("removes duplicate candidates", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "05/09/2026 USE BY 05/09/2026",
+      ),
+    ).toEqual(["05/09/2026"]);
+  });
+
+  it("returns an invalid date-like candidate for the parser to reject", () => {
+    const candidates =
+      extractExpiryDateCandidates(
+        "USE BY 31/02/2026",
+      );
+
+    expect(candidates).toEqual(["31/02/2026"]);
+    expect(parseExpiryDate(candidates[0])).toBeNull();
+  });
+
+  it("ignores unrelated numbers", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "LOT 123456 BATCH 98765 500g",
+      ),
+    ).toEqual([]);
+  });
+
+  it("returns an empty array when OCR text is empty", () => {
+    expect(
+      extractExpiryDateCandidates(""),
+    ).toEqual([]);
+  });
+
+  it("extracts a date next to punctuation", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "USE BY: 05/09/2026.",
+      ),
+    ).toEqual(["05/09/2026"]);
+  });
+
+  it("extracts mixed-case named months", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "Best before 05 Sep 2026",
+      ),
+    ).toEqual(["05 Sep 2026"]);
   });
 });
