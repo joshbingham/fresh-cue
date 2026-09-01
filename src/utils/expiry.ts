@@ -35,3 +35,126 @@ export function getExpiryUrgency(
 
   return "later";
 }
+
+const monthNumbers: Record<string, number> = {
+  jan: 1,
+  january: 1,
+  feb: 2,
+  february: 2,
+  mar: 3,
+  march: 3,
+  apr: 4,
+  april: 4,
+  may: 5,
+  jun: 6,
+  june: 6,
+  jul: 7,
+  july: 7,
+  aug: 8,
+  august: 8,
+  sep: 9,
+  sept: 9,
+  september: 9,
+  oct: 10,
+  october: 10,
+  nov: 11,
+  november: 11,
+  dec: 12,
+  december: 12,
+};
+
+function expandYear(year: number): number {
+  if (year >= 100) {
+    return year;
+  }
+
+  return 2000 + year;
+}
+
+function toIsoDate(
+  year: number,
+  month: number,
+  day: number,
+): string | null {
+  if (
+    year < 2000 ||
+    year > 2100 ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return null;
+  }
+
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return [
+    year.toString().padStart(4, "0"),
+    month.toString().padStart(2, "0"),
+    day.toString().padStart(2, "0"),
+  ].join("-");
+}
+
+export function parseExpiryDate(
+  value: string,
+): string | null {
+  const normalised = value.trim();
+
+  if (!normalised) {
+    return null;
+  }
+
+  const isoMatch = normalised.match(
+    /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/,
+  );
+
+  if (isoMatch) {
+    return toIsoDate(
+      Number(isoMatch[1]),
+      Number(isoMatch[2]),
+      Number(isoMatch[3]),
+    );
+  }
+
+  const dayFirstMatch = normalised.match(
+    /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2}|\d{4})$/,
+  );
+
+  if (dayFirstMatch) {
+    return toIsoDate(
+      expandYear(Number(dayFirstMatch[3])),
+      Number(dayFirstMatch[2]),
+      Number(dayFirstMatch[1]),
+    );
+  }
+
+  const namedMonthMatch = normalised.match(
+    /^(\d{1,2})\s+([a-z]+)\s+(\d{2}|\d{4})$/i,
+  );
+
+  if (namedMonthMatch) {
+    const month =
+      monthNumbers[namedMonthMatch[2].toLowerCase()];
+
+    if (!month) {
+      return null;
+    }
+
+    return toIsoDate(
+      expandYear(Number(namedMonthMatch[3])),
+      month,
+      Number(namedMonthMatch[1]),
+    );
+  }
+
+  return null;
+}
