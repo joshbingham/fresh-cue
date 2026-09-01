@@ -5,8 +5,8 @@ import {
   type IScannerControls,
 } from "@zxing/browser";
 
-interface BarcodeScannerProps {
-  onDetected: (barcode: string) => void;
+interface ItemScannerProps {
+  onBarcodeDetected: (barcode: string) => void;
   onCancel: () => void;
 }
 
@@ -17,15 +17,20 @@ type CameraStatus =
   | "unsupported"
   | "error";
 
-export default function BarcodeScanner({
-  onDetected,
+type ScanPhase = "barcode" | "expiry";
+
+export default function ItemScanner({
+  onBarcodeDetected,
   onCancel,
-}: BarcodeScannerProps) {
+}: ItemScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hasDetectedRef = useRef(false);
 
   const [cameraStatus, setCameraStatus] =
     useState<CameraStatus>("starting");
+
+  const [scanPhase, setScanPhase] =
+    useState<ScanPhase>("barcode");
 
     const readerRef = useRef<BrowserMultiFormatReader | null>(null);
 
@@ -87,7 +92,8 @@ export default function BarcodeScanner({
 
                 console.log("Barcode captured:", barcode);
 
-                onDetected(barcode);
+                onBarcodeDetected(barcode);
+                setScanPhase("expiry");
                 },
             );
 
@@ -142,13 +148,22 @@ export default function BarcodeScanner({
       aria-labelledby="barcode-scanner-heading"
     >
       <h3 id="barcode-scanner-heading">
-        Scan barcode
+        {scanPhase === "barcode"
+          ? "Scan barcode"
+          : "Scan expiry date"}
       </h3>
 
-      <p>
-        Hold the barcode horizontally and position it clearly in front of
-        your camera.
+      {scanPhase === "barcode" ? (
+        <p>
+          Hold the barcode horizontally and position it clearly in front of
+          your camera.
         </p>
+      ) : (
+        <p>
+          Barcode captured. Now point the camera at the printed expiry,
+          use-by or best-before date.
+        </p>
+      )}
 
       {cameraStatus === "starting" && (
         <p role="status">
@@ -158,7 +173,9 @@ export default function BarcodeScanner({
 
       {cameraStatus === "ready" && (
         <p role="status">
-          Camera ready. Point it at a barcode.
+          {scanPhase === "barcode"
+            ? "Camera ready. Point it at a barcode."
+            : "Expiry-date scanning will be added next."}
         </p>
       )}
 

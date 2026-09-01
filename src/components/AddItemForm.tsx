@@ -1,5 +1,5 @@
 import { useRef, useState, type FormEvent } from "react";
-import BarcodeScanner from "./BarcodeScanner";
+import ItemScanner from "./ItemScanner";
 import type {
   InventoryItem,
   ProductLookupResult,
@@ -403,7 +403,6 @@ export default function AddItemForm({
 
   function handleScannedBarcode(barcode: string): void {
     handleBarcodeChange(barcode);
-    setIsBarcodeScannerOpen(false);
     setScanMessage(`Barcode captured: ${barcode}`);
 
     void handleProductLookup(barcode);
@@ -658,8 +657,8 @@ export default function AddItemForm({
       </div>
 
       {isBarcodeScannerOpen && (
-        <BarcodeScanner
-          onDetected={handleScannedBarcode}
+        <ItemScanner
+          onBarcodeDetected={handleScannedBarcode}
           onCancel={handleCancelBarcodeScan}
         />
       )}
