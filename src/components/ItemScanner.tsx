@@ -90,11 +90,11 @@ export default function ItemScanner({
                 stream,
                 videoRef.current,
                 (result) => {
-                if (!result || hasDetectedRef.current) {
+                  if (!result || hasDetectedRef.current) {
                     return;
-                }
+                  }
 
-                const barcode = result.getText().trim();
+                  const barcode = result.getText().trim();
 
                 if (!/^(?:\d{8}|\d{12,14})$/.test(barcode)) {
                     return;
@@ -234,9 +234,40 @@ export default function ItemScanner({
         imageBlob.type,
       );
 
+      const formData = new FormData();
+
+      formData.append(
+        "file",
+        imageBlob,
+        "expiry-capture.jpg",
+      );
+
+      const response = await fetch(
+        "http://127.0.0.1:8001/ocr",
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `OCR request failed with status ${response.status}.`,
+        );
+      }
+
+      const result = (await response.json()) as {
+        lines: Array<{
+          text: string;
+          confidence: number;
+        }>;
+      };
+
+      console.log("Expiry OCR result:", result);
+
       setExpiryCaptureStatus("ready");
       setExpiryCaptureMessage(
-        "Expiry image captured and ready for OCR.",
+        "Expiry image read successfully.",
       );
     } catch (error) {
       console.error(

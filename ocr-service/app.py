@@ -5,7 +5,20 @@ from pathlib import Path
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from paddleocr import PaddleOCR
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="FreshCue OCR Service")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=False,
+    allow_methods=["POST", "GET"],
+    allow_headers=["*"],
+)
 
 ocr = PaddleOCR(
     text_detection_model_name="PP-OCRv6_medium_det",
