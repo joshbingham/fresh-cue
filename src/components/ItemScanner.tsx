@@ -5,6 +5,10 @@ import {
   type IScannerControls,
 } from "@zxing/browser";
 import type { ProductLookupResult } from "../types";
+import {
+  extractExpiryDateCandidates,
+  parseExpiryDate,
+} from "../utils/expiry";
 
 export type BarcodeLookupOutcome =
   | {
@@ -386,6 +390,34 @@ export default function ItemScanner({
 
       console.log("Expiry OCR result:", result);
 
+      const rawText = result.lines
+        .map((line) => line.text)
+        .join("\n");
+
+      console.log("Expiry OCR raw text:", rawText);
+
+      const expiryCandidates =
+        extractExpiryDateCandidates(rawText);
+
+      const parsedExpiryDates = expiryCandidates
+        .map((candidate) => ({
+          candidate,
+          date: parseExpiryDate(candidate),
+        }))
+        .filter(
+          (
+            result,
+          ): result is {
+            candidate: string;
+            date: string;
+          } => result.date !== null,
+        );
+
+      console.log(
+        "Expiry date candidates:",
+        parsedExpiryDates,
+      );
+
       setExpiryCaptureStatus("ready");
       setExpiryCaptureMessage(
         "Expiry image read successfully.",
@@ -421,24 +453,11 @@ export default function ItemScanner({
         </p>
       ) : (
         <p>
-          Barcode captured. Now point the camera at the printed expiry,
-          use-by or best-before date.
+          Product confirmed. Position the printed expiry, use-by or
+          best-before date inside the guide.
         </p>
       )}
 
-      {cameraStatus === "starting" && (
-        <p role="status">
-          Starting camera...
-        </p>
-      )}
-
-      {cameraStatus === "ready" && (
-        <p role="status">
-          {scanPhase === "barcode"
-            ? "Camera ready. Point it at a barcode."
-            : "When you are ready, capture the printed expiry, use-by or best-before date."}
-        </p>
-      )}
 
       {cameraStatus === "denied" && (
         <p role="alert">
@@ -480,6 +499,30 @@ export default function ItemScanner({
               <span>Fill most of the frame with barcode</span>
             </div>
           )}
+
+        {scanPhase === "expiry" &&
+          cameraStatus === "ready" && (
+            <div
+              className="expiry-scan-target"
+              aria-hidden="true"
+            >
+              <span>Place expiry date here</span>
+            </div>
+          )}
+
+        {cameraStatus === "starting" && (
+          <p role="status">
+            Starting camera...
+          </p>
+        )}
+
+        {cameraStatus === "ready" && (
+          <p role="status">
+            {scanPhase === "barcode"
+              ? "Camera ready. Point it at a barcode."
+              : "When you are ready, capture the printed expiry, use-by or best-before date."}
+          </p>
+        )}
       </div>
 
       {scanPhase === "barcode" &&

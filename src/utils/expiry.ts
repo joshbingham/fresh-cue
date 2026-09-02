@@ -166,7 +166,7 @@ export function extractExpiryDateCandidates(
 
   const patterns = [
     /\b\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\b/g,
-    /\b\d{1,2}[-/.]\d{1,2}[-/.](?:\d{2}|\d{4})\b/g,
+    /\b\d{1,2}[-/.]\d{1,2}[-/.](?:\d{2}(?=(?:[01]\d|2[0-3]):)|\d{4}\b|\d{2}\b)/g,
     /\b\d{1,2}\s+(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(?:\d{2}|\d{4})\b/gi,
   ];
 

@@ -143,6 +143,14 @@ describe("extractExpiryDateCandidates", () => {
     ).toEqual(["05 SEP 2026"]);
   });
 
+  it("extracts a two-digit-year date joined to a time by OCR", () => {
+    expect(
+      extractExpiryDateCandidates(
+        "BBE:09/01/2712:46SA",
+      ),
+    ).toEqual(["09/01/27"]);
+  });
+
   it("extracts a date split across OCR whitespace", () => {
     expect(
       extractExpiryDateCandidates(
