@@ -6,6 +6,8 @@ interface OpenFoodFactsProduct {
   brands?: string;
   categories?: string;
   quantity?: string;
+  product_quantity?: number | string;
+  product_quantity_unit?: string;
   image_front_url?: string;
 }
 
@@ -35,6 +37,25 @@ function getFirstValue(value?: string): string | null {
   return firstValue ?? null;
 }
 
+function getProductQuantity(
+  product: OpenFoodFactsProduct,
+): string | null {
+  const quantity = product.quantity?.trim();
+
+  if (quantity) {
+    return quantity;
+  }
+
+  if (
+    product.product_quantity == null ||
+    !product.product_quantity_unit?.trim()
+  ) {
+    return null;
+  }
+
+  return `${product.product_quantity} ${product.product_quantity_unit.trim()}`;
+}
+
 function mapOpenFoodFactsProduct(
   barcode: string,
   product: OpenFoodFactsProduct,
@@ -44,7 +65,7 @@ function mapOpenFoodFactsProduct(
     productName: product.product_name?.trim() || null,
     brand: getFirstValue(product.brands),
     category: getFirstValue(product.categories),
-    quantity: product.quantity?.trim() || null,
+    quantity: getProductQuantity(product),
     imageUrl: product.image_front_url?.trim() || null,
   };
 }
@@ -59,6 +80,8 @@ export async function lookupProductByBarcode(
       "brands",
       "categories",
       "quantity",
+      "product_quantity",
+      "product_quantity_unit",
       "image_front_url",
     ].join(","),
   });

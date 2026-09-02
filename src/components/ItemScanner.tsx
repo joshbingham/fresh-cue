@@ -4,9 +4,34 @@ import {
   BrowserMultiFormatReader,
   type IScannerControls,
 } from "@zxing/browser";
+import type { ProductLookupResult } from "../types";
+
+export type BarcodeLookupOutcome =
+  | {
+      status: "success";
+      product: ProductLookupResult;
+    }
+  | {
+      status: "not-found";
+    }
+  | {
+      status: "error";
+    }
+  | {
+      status: "invalid";
+    }
+  | {
+      status: "aborted";
+    };
 
 interface ItemScannerProps {
-  onBarcodeDetected: (barcode: string) => void;
+  onBarcodeDetected: (
+    barcode: string,
+  ) => Promise<BarcodeLookupOutcome>;
+  onProductConfirmed: (
+    barcode: string,
+    product: ProductLookupResult,
+  ) => void;
   onCancel: () => void;
 }
 
@@ -27,16 +52,31 @@ type ExpiryCaptureStatus =
 
 export default function ItemScanner({
   onBarcodeDetected,
+  onProductConfirmed,
   onCancel,
 }: ItemScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hasDetectedRef = useRef(false);
+
+  const ignoredBarcodesRef =
+    useRef<Set<string>>(new Set());
 
   const [cameraStatus, setCameraStatus] =
     useState<CameraStatus>("starting");
 
   const [scanPhase, setScanPhase] =
     useState<ScanPhase>("barcode");
+
+  const [detectedBarcode, setDetectedBarcode] =
+    useState<string | null>(null);
+
+  const [barcodeLookupStatus, setBarcodeLookupStatus] =
+    useState<
+      "idle" | "checking" | "success" | "error"
+    >("idle");
+
+  const [detectedProduct, setDetectedProduct] =
+    useState<ProductLookupResult | null>(null);
 
   const [expiryCaptureStatus, setExpiryCaptureStatus] =
     useState<ExpiryCaptureStatus>("idle");
@@ -96,16 +136,20 @@ export default function ItemScanner({
 
                   const barcode = result.getText().trim();
 
-                if (!/^(?:\d{8}|\d{12,14})$/.test(barcode)) {
+                  if (!/^(?:\d{8}|\d{12,14})$/.test(barcode)) {
                     return;
-                }
+                  }
 
-                hasDetectedRef.current = true;
+                  if (ignoredBarcodesRef.current.has(barcode)) {
+                    return;
+                  }
 
-                console.log("Barcode captured:", barcode);
+                  hasDetectedRef.current = true;
 
-                onBarcodeDetected(barcode);
-                setScanPhase("expiry");
+                  console.log("Barcode detected:", barcode);
+
+                  setDetectedBarcode(barcode);
+                  void checkDetectedBarcode(barcode);
                 },
             );
 
@@ -153,6 +197,83 @@ export default function ItemScanner({
         });
         };
   }, []);
+
+  async function checkDetectedBarcode(
+    barcode: string,
+  ): Promise<void> {
+    setBarcodeLookupStatus("checking");
+    setDetectedProduct(null);
+
+    const outcome = await onBarcodeDetected(barcode);
+
+    if (outcome.status === "success") {
+      setDetectedProduct(outcome.product);
+      setBarcodeLookupStatus("success");
+      return;
+    }
+
+    if (outcome.status === "not-found") {
+      console.log(
+        "Ignoring unrecognised barcode:",
+        barcode,
+      );
+
+      ignoredBarcodesRef.current.add(barcode);
+
+      setDetectedBarcode(null);
+      setDetectedProduct(null);
+      setBarcodeLookupStatus("idle");
+
+      hasDetectedRef.current = false;
+
+      return;
+    }
+
+    if (
+      outcome.status === "error" ||
+      outcome.status === "invalid"
+    ) {
+      setBarcodeLookupStatus("error");
+      return;
+    }
+
+    setBarcodeLookupStatus("idle");
+  }
+
+  function handleUseBarcode(): void {
+    if (
+      !detectedBarcode ||
+      barcodeLookupStatus !== "success" ||
+      !detectedProduct
+    ) {
+      return;
+    }
+
+    console.log(
+      "Product confirmed:",
+      detectedProduct.productName,
+    );
+
+    onProductConfirmed(
+      detectedBarcode,
+      detectedProduct,
+    );
+
+    setScanPhase("expiry");
+  }
+
+  function handleScanAgain(): void {
+    detectedBarcode && console.log(
+      "Barcode rejected:",
+      detectedBarcode,
+    );
+
+    setDetectedBarcode(null);
+    hasDetectedRef.current = false;
+
+    setBarcodeLookupStatus("idle");
+    setDetectedProduct(null);
+  }
 
   async function captureExpiryImage(): Promise<void> {
     const video = videoRef.current;
@@ -315,7 +436,7 @@ export default function ItemScanner({
         <p role="status">
           {scanPhase === "barcode"
             ? "Camera ready. Point it at a barcode."
-            : "Expiry-date scanning will be added next."}
+            : "When you are ready, capture the printed expiry, use-by or best-before date."}
         </p>
       )}
 
@@ -340,13 +461,136 @@ export default function ItemScanner({
         </p>
       )}
 
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        hidden={cameraStatus !== "ready"}
-      />
+      <div className="item-scanner-camera">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          hidden={cameraStatus !== "ready"}
+        />
+
+        {scanPhase === "barcode" &&
+          cameraStatus === "ready" &&
+          !detectedBarcode && (
+            <div
+              className="barcode-scan-target"
+              aria-hidden="true"
+            >
+              <span>Fill most of the frame with barcode</span>
+            </div>
+          )}
+      </div>
+
+      {scanPhase === "barcode" &&
+        cameraStatus === "ready" &&
+        !detectedBarcode && (
+          <div className="barcode-scan-progress">
+            <p role="status">
+              Scanning for barcode...
+            </p>
+
+            <div
+              className="scan-progress-track"
+              aria-hidden="true"
+            >
+              <div className="scan-progress-indicator" />
+            </div>
+
+            <p className="scan-guidance">
+              Move closer until the barcode fills most of the guide. Keep it flat,
+              horizontal and well lit.
+            </p>
+          </div>
+        )}
+
+      {scanPhase === "barcode" && detectedBarcode && (
+        <div
+          className="barcode-detected"
+          aria-live="polite"
+        >
+          {barcodeLookupStatus === "checking" && (
+            <>
+              <p>
+                <strong>Checking product...</strong>
+              </p>
+
+              <div
+                className="scan-progress-track"
+                aria-hidden="true"
+              >
+                <div className="scan-progress-indicator" />
+              </div>
+
+              <p className="scan-guidance">
+                Barcode read. Checking the product database...
+              </p>
+            </>
+          )}
+
+          {barcodeLookupStatus === "success" &&
+            detectedProduct && (
+              <>
+                <p>
+                  <strong>✓ Product found</strong>
+                </p>
+
+                <p className="barcode-detected-value">
+                  {detectedProduct.productName ??
+                    "Unnamed product"}
+                </p>
+
+                {detectedProduct.brand && (
+                  <p>Brand: {detectedProduct.brand}</p>
+                )}
+
+                <p className="scan-guidance">
+                  Barcode: {detectedBarcode}
+                </p>
+
+                <div className="barcode-detected-actions">
+                  <button
+                    type="button"
+                    onClick={handleUseBarcode}
+                  >
+                    Use product
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleScanAgain}
+                  >
+                    Scan again
+                  </button>
+                </div>
+              </>
+            )}
+
+
+          {barcodeLookupStatus === "error" && (
+            <>
+              <p>
+                <strong>Product lookup unavailable</strong>
+              </p>
+
+              <p className="scan-guidance">
+                We couldn't check this barcode right now.
+                You can try scanning again or enter the item
+                manually.
+              </p>
+
+              <div className="barcode-detected-actions">
+                <button
+                  type="button"
+                  onClick={handleScanAgain}
+                >
+                  Scan again
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {scanPhase === "expiry" && cameraStatus === "ready" && (
         <button
