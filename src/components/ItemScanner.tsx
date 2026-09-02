@@ -19,6 +19,12 @@ type CameraStatus =
 
 type ScanPhase = "barcode" | "expiry";
 
+type ExpiryCaptureStatus =
+  | "idle"
+  | "capturing"
+  | "ready"
+  | "error";
+
 export default function ItemScanner({
   onBarcodeDetected,
   onCancel,
@@ -31,6 +37,12 @@ export default function ItemScanner({
 
   const [scanPhase, setScanPhase] =
     useState<ScanPhase>("barcode");
+
+  const [expiryCaptureStatus, setExpiryCaptureStatus] =
+    useState<ExpiryCaptureStatus>("idle");
+
+  const [expiryCaptureMessage, setExpiryCaptureMessage] =
+    useState<string | null>(null);
 
     const readerRef = useRef<BrowserMultiFormatReader | null>(null);
 
@@ -142,6 +154,103 @@ export default function ItemScanner({
         };
   }, []);
 
+  async function captureExpiryImage(): Promise<void> {
+    const video = videoRef.current;
+
+    if (
+      scanPhase !== "expiry" ||
+      cameraStatus !== "ready" ||
+      !video ||
+      video.videoWidth === 0 ||
+      video.videoHeight === 0
+    ) {
+      setExpiryCaptureStatus("error");
+      setExpiryCaptureMessage(
+        "The camera image is not ready yet. Please try again.",
+      );
+      return;
+    }
+
+    setExpiryCaptureStatus("capturing");
+    setExpiryCaptureMessage(null);
+
+    try {
+      const canvas = document.createElement("canvas");
+
+      const sourceWidth = video.videoWidth * 0.8;
+      const sourceHeight = video.videoHeight * 0.18;
+      const sourceX = video.videoWidth * 0.1;
+      const sourceY = video.videoHeight * 0.41;
+
+      const scale = 3;
+
+      canvas.width = Math.round(sourceWidth * scale);
+      canvas.height = Math.round(sourceHeight * scale);
+
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        throw new Error("Unable to create image canvas.");
+      }
+
+      context.imageSmoothingEnabled = false;
+
+      context.drawImage(
+        video,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      );
+
+      const imageBlob = await new Promise<Blob>(
+        (resolve, reject) => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(
+                  new Error(
+                    "Unable to create expiry image.",
+                  ),
+                );
+                return;
+              }
+
+              resolve(blob);
+            },
+            "image/jpeg",
+            0.9,
+          );
+        },
+      );
+
+      console.log(
+        "Expiry image captured:",
+        imageBlob.size,
+        imageBlob.type,
+      );
+
+      setExpiryCaptureStatus("ready");
+      setExpiryCaptureMessage(
+        "Expiry image captured and ready for OCR.",
+      );
+    } catch (error) {
+      console.error(
+        "Failed to capture expiry image:",
+        error,
+      );
+
+      setExpiryCaptureStatus("error");
+      setExpiryCaptureMessage(
+        "The expiry image could not be captured. Please try again.",
+      );
+    }
+  }
+
   return (
     <section
       className="barcode-scanner"
@@ -207,6 +316,30 @@ export default function ItemScanner({
         muted
         hidden={cameraStatus !== "ready"}
       />
+
+      {scanPhase === "expiry" && cameraStatus === "ready" && (
+        <button
+          type="button"
+          onClick={() => void captureExpiryImage()}
+          disabled={expiryCaptureStatus === "capturing"}
+        >
+          {expiryCaptureStatus === "capturing"
+            ? "Capturing..."
+            : "Capture expiry date"}
+        </button>
+      )}
+
+      {expiryCaptureMessage && (
+        <p
+          role={
+            expiryCaptureStatus === "error"
+              ? "alert"
+              : "status"
+          }
+        >
+          {expiryCaptureMessage}
+        </p>
+      )}
 
       <button
         type="button"
