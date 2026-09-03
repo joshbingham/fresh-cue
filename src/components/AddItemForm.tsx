@@ -1,5 +1,7 @@
 import { useRef, useState, type FormEvent } from "react";
-import BarcodeScanner from "./BarcodeScanner";
+import ItemScanner, {
+  type BarcodeLookupOutcome,
+} from "./ItemScanner";
 import type {
   InventoryItem,
   ProductLookupResult,
@@ -272,9 +274,57 @@ export default function AddItemForm({
     setIsBarcodeScannerOpen(true);
   }
 
+  function applyProductToForm(
+    product: ProductLookupResult,
+  ): void {
+    const productName = product.productName?.trim() ?? "";
+    const productBrand = product.brand?.trim() ?? "";
+
+    const suggestedCategory =
+      suggestFreshCueCategory(product);
+
+    const parsedPackageQuantity =
+      parsePackageQuantity(product.quantity);
+
+    setLookedUpProduct(product);
+
+    setValues((currentValues) => ({
+      ...currentValues,
+      name: prefillTouchedFieldsRef.current.name
+        ? currentValues.name
+        : productName || currentValues.name,
+      brand: prefillTouchedFieldsRef.current.brand
+        ? currentValues.brand
+        : productBrand || currentValues.brand,
+      category: prefillTouchedFieldsRef.current.category
+        ? currentValues.category
+        : suggestedCategory ?? currentValues.category,
+      quantity:
+        parsedPackageQuantity &&
+        !prefillTouchedFieldsRef.current.quantity &&
+        !prefillTouchedFieldsRef.current.quantityUnit
+          ? parsedPackageQuantity.quantity
+          : currentValues.quantity,
+      quantityUnit:
+        parsedPackageQuantity &&
+        !prefillTouchedFieldsRef.current.quantity &&
+        !prefillTouchedFieldsRef.current.quantityUnit
+          ? parsedPackageQuantity.quantityUnit
+          : currentValues.quantityUnit,
+    }));
+
+    if (productName) {
+      setErrors((currentErrors) => ({
+        ...currentErrors,
+        name: undefined,
+      }));
+    }
+  }
+
   async function handleProductLookup(
     barcodeOverride?: string,
-  ): Promise<void> {
+    shouldApplyProduct = true,
+  ): Promise<BarcodeLookupOutcome> {
     const trimmedBarcode = (
       barcodeOverride ?? values.barcode
     ).trim();
@@ -289,7 +339,7 @@ export default function AddItemForm({
       }));
 
       setProductLookupStatus("idle");
-      return;
+      return { status: "invalid" };
     }
 
     if (!barcodePattern.test(trimmedBarcode)) {
@@ -299,7 +349,7 @@ export default function AddItemForm({
       }));
 
       setProductLookupStatus("idle");
-      return;
+      return { status: "invalid" };
     }
 
     setErrors((currentErrors) => ({
@@ -328,7 +378,7 @@ export default function AddItemForm({
           "No product was found for this barcode. You can still enter the item manually.",
         );
 
-        return;
+        return { status: "not-found" };
       }
 
       if (!response.ok) {
@@ -337,59 +387,24 @@ export default function AddItemForm({
           "Unable to look up this product right now. You can still enter the item manually.",
         );
 
-        return;
+        return { status: "error" };
       }
 
       const product =
         (await response.json()) as ProductLookupResult;
 
-      const productName = product.productName?.trim() ?? "";
-      const productBrand = product.brand?.trim() ?? "";
-
-      const suggestedCategory =
-        suggestFreshCueCategory(product);
-
-      const parsedPackageQuantity =
-        parsePackageQuantity(product.quantity);
-
-      setLookedUpProduct(product);
-
-      setValues((currentValues) => ({
-        ...currentValues,
-        name: prefillTouchedFieldsRef.current.name
-          ? currentValues.name
-          : productName || currentValues.name,
-        brand: prefillTouchedFieldsRef.current.brand
-          ? currentValues.brand
-          : productBrand || currentValues.brand,
-        category: prefillTouchedFieldsRef.current.category
-          ? currentValues.category
-          : suggestedCategory ?? currentValues.category,
-        quantity:
-          parsedPackageQuantity &&
-          !prefillTouchedFieldsRef.current.quantity &&
-          !prefillTouchedFieldsRef.current.quantityUnit
-            ? parsedPackageQuantity.quantity
-            : currentValues.quantity,
-        quantityUnit:
-          parsedPackageQuantity &&
-          !prefillTouchedFieldsRef.current.quantity &&
-          !prefillTouchedFieldsRef.current.quantityUnit
-            ? parsedPackageQuantity.quantityUnit
-            : currentValues.quantityUnit,
-      }));
-
-      if (productName) {
-        setErrors((currentErrors) => ({
-          ...currentErrors,
-          name: undefined,
-        }));
+      if (shouldApplyProduct) {
+        applyProductToForm(product);
       }
 
       setProductLookupStatus("success");
+      return {
+        status: "success",
+        product,
+      };
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        return;
+        return { status: "aborted" };
       }
 
       console.error("Failed to look up product:", error);
@@ -398,15 +413,27 @@ export default function AddItemForm({
       setProductLookupMessage(
         "Unable to connect to the product lookup service. You can still enter the item manually.",
       );
+      return { status: "error" };
     }
   }
 
-  function handleScannedBarcode(barcode: string): void {
-    handleBarcodeChange(barcode);
-    setIsBarcodeScannerOpen(false);
-    setScanMessage(`Barcode captured: ${barcode}`);
+  async function handleScannedBarcode(
+    barcode: string,
+  ): Promise<BarcodeLookupOutcome> {
+    setScanMessage(null);
 
-    void handleProductLookup(barcode);
+    return handleProductLookup(barcode, false);
+  }
+
+  function handleScannedProductConfirmed(
+    barcode: string,
+    product: ProductLookupResult,
+  ): void {
+    handleBarcodeChange(barcode);
+    applyProductToForm(product);
+
+    setProductLookupStatus("success");
+    setProductLookupMessage(null);
   }
 
   function handleCancelBarcodeScan(): void {
@@ -658,8 +685,9 @@ export default function AddItemForm({
       </div>
 
       {isBarcodeScannerOpen && (
-        <BarcodeScanner
-          onDetected={handleScannedBarcode}
+        <ItemScanner
+          onBarcodeDetected={handleScannedBarcode}
+          onProductConfirmed={handleScannedProductConfirmed}
           onCancel={handleCancelBarcodeScan}
         />
       )}

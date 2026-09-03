@@ -27,3 +27,12 @@ dist-ssr
 backend/.env
 backend/dist
 backend/node_modules
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# OCR service environment
+ocr-service/.env
