@@ -7,6 +7,8 @@ import {
 import type { ProductLookupResult } from "../types";
 import {
   extractExpiryDateCandidates,
+  getExpiryDateStatus,
+  getRelevantExpiryDates,
   parseExpiryDate,
 } from "../utils/expiry";
 
@@ -54,6 +56,11 @@ type ExpiryCaptureStatus =
   | "ready"
   | "error";
 
+type DetectedExpiryDate = {
+  candidate: string;
+  date: string;
+};
+
 export default function ItemScanner({
   onBarcodeDetected,
   onProductConfirmed,
@@ -87,6 +94,33 @@ export default function ItemScanner({
 
   const [expiryCaptureMessage, setExpiryCaptureMessage] =
     useState<string | null>(null);
+
+  const [detectedExpiryDates, setDetectedExpiryDates] =
+    useState<DetectedExpiryDate[]>([]);
+
+  const [selectedExpiryDate, setSelectedExpiryDate] =
+    useState<string>("");
+
+  const relevantExpiryDateValues = getRelevantExpiryDates(
+    detectedExpiryDates.map((expiryDate) => expiryDate.date),
+  );
+
+  const visibleExpiryDates = detectedExpiryDates.filter(
+    (expiryDate) =>
+      relevantExpiryDateValues.includes(expiryDate.date),
+  );
+
+  const expiryDateToConfirm =
+    visibleExpiryDates.length === 1
+      ? visibleExpiryDates[0].date
+      : selectedExpiryDate;
+
+  const detectedDatesAreExpired =
+    visibleExpiryDates.length > 0 &&
+    visibleExpiryDates.every(
+      (expiryDate) =>
+        getExpiryDateStatus(expiryDate.date) === "past",
+    );
 
     const readerRef = useRef<BrowserMultiFormatReader | null>(null);
 
@@ -299,6 +333,9 @@ export default function ItemScanner({
     setExpiryCaptureStatus("capturing");
     setExpiryCaptureMessage(null);
 
+    setDetectedExpiryDates([]);
+    setSelectedExpiryDate("");
+
     try {
       const canvas = document.createElement("canvas");
 
@@ -368,7 +405,7 @@ export default function ItemScanner({
       );
 
       const response = await fetch(
-        "http://127.0.0.1:8001/ocr",
+        "http://127.0.0.1:8001//ocr",
         {
           method: "POST",
           body: formData,
@@ -418,9 +455,15 @@ export default function ItemScanner({
         parsedExpiryDates,
       );
 
+      setDetectedExpiryDates(parsedExpiryDates);
       setExpiryCaptureStatus("ready");
+
       setExpiryCaptureMessage(
-        "Expiry image read successfully.",
+        parsedExpiryDates.length > 0
+          ? `Found ${parsedExpiryDates.length} possible expiry ${
+              parsedExpiryDates.length === 1 ? "date" : "dates"
+            }.`
+          : "No expiry date was detected. Try positioning the printed date clearly inside the guide.",
       );
     } catch (error) {
       console.error(
@@ -657,6 +700,57 @@ export default function ItemScanner({
         >
           {expiryCaptureMessage}
         </p>
+      )}
+
+      {detectedDatesAreExpired && (
+        <p role="alert">
+          Only a past date was detected. This item may be expired, or this could be a production or packed date. Scan again if you're unsure.
+        </p>
+      )}
+
+      {visibleExpiryDates.length > 0 && (
+        <fieldset className="expiry-date-options">
+          <legend>Possible dates found</legend>
+
+          {visibleExpiryDates.map((expiryDate) => (
+            <label
+              key={`${expiryDate.candidate}-${expiryDate.date}`}
+            >
+              <input
+                type="radio"
+                name="detected-expiry-date"
+                value={expiryDate.date}
+                checked={expiryDateToConfirm === expiryDate.date}
+                onChange={(event) =>
+                  setSelectedExpiryDate(event.target.value)
+                }
+              />
+
+              <span>
+                {expiryDate.candidate} → {expiryDate.date}
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      )}
+
+      {visibleExpiryDates.length > 0 && (
+        <button
+          type="button"
+          disabled={!expiryDateToConfirm}
+          onClick={() => {
+            console.log(
+              "Expiry date confirmed:",
+              expiryDateToConfirm,
+            );
+          }}
+        >
+          {visibleExpiryDates.length === 1
+            ? detectedDatesAreExpired
+              ? "Use this date anyway"
+              : "Use this date"
+            : "Use selected date"}
+        </button>
       )}
 
       <button

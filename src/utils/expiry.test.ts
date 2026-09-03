@@ -4,6 +4,8 @@ import {
   getDaysUntilExpiry,
   getExpiryUrgency,
   parseExpiryDate,
+  getExpiryDateStatus,
+  getRelevantExpiryDates,
 } from "./expiry";
 
 const today = new Date(2026, 7, 3);
@@ -224,5 +226,67 @@ describe("extractExpiryDateCandidates", () => {
         "Best before 05 Sep 2026",
       ),
     ).toEqual(["05 Sep 2026"]);
+  });
+});
+
+describe("getExpiryDateStatus", () => {
+  const today = new Date(2026, 8, 3);
+
+  it("returns past for an earlier date", () => {
+    expect(
+      getExpiryDateStatus("2026-05-14", today),
+    ).toBe("past");
+  });
+
+  it("returns today for the current date", () => {
+    expect(
+      getExpiryDateStatus("2026-09-03", today),
+    ).toBe("today");
+  });
+
+  it("returns future for a later date", () => {
+    expect(
+      getExpiryDateStatus("2027-01-09", today),
+    ).toBe("future");
+  });
+});
+
+describe("getRelevantExpiryDates", () => {
+  const today = new Date(2026, 8, 3);
+
+  it("prefers future dates over past dates", () => {
+    expect(
+      getRelevantExpiryDates(
+        ["2026-05-14", "2027-01-09"],
+        today,
+      ),
+    ).toEqual(["2027-01-09"]);
+  });
+
+  it("keeps multiple future dates when more than one is found", () => {
+    expect(
+      getRelevantExpiryDates(
+        ["2026-05-14", "2027-01-09", "2027-03-20"],
+        today,
+      ),
+    ).toEqual(["2027-01-09", "2027-03-20"]);
+  });
+
+  it("prefers a date expiring today when no future date exists", () => {
+    expect(
+      getRelevantExpiryDates(
+        ["2026-05-14", "2026-09-03"],
+        today,
+      ),
+    ).toEqual(["2026-09-03"]);
+  });
+
+  it("uses only the latest date when all detected dates are past", () => {
+    expect(
+      getRelevantExpiryDates(
+        ["2026-05-14", "2026-08-20"],
+        today,
+      ),
+    ).toEqual(["2026-08-20"]);
   });
 });

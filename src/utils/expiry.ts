@@ -4,6 +4,11 @@ export type ExpiryUrgency =
   | "soon"
   | "later";
 
+export type ExpiryDateStatus =
+  | "past"
+  | "today"
+  | "future";
+
 export function getDaysUntilExpiry(
   expiryDate: string,
   today = new Date(),
@@ -23,6 +28,21 @@ export function getDaysUntilExpiry(
   );
 }
 
+export function getExpiryDateStatus(
+  expiryDate: string,
+  today = new Date(),
+): ExpiryDateStatus {
+  const daysUntilExpiry = getDaysUntilExpiry(
+    expiryDate,
+    today,
+  );
+
+  if (daysUntilExpiry < 0) return "past";
+  if (daysUntilExpiry === 0) return "today";
+
+  return "future";
+}
+
 export function getExpiryUrgency(
   expiryDate: string,
   today = new Date(),
@@ -34,6 +54,35 @@ export function getExpiryUrgency(
   if (daysUntilExpiry <= 3) return "soon";
 
   return "later";
+}
+
+export function getRelevantExpiryDates(
+  expiryDates: string[],
+  today = new Date(),
+): string[] {
+  const futureDates = expiryDates.filter(
+    (date) => getExpiryDateStatus(date, today) === "future",
+  );
+
+  if (futureDates.length > 0) {
+    return futureDates;
+  }
+
+  const todayDates = expiryDates.filter(
+    (date) => getExpiryDateStatus(date, today) === "today",
+  );
+
+  if (todayDates.length > 0) {
+    return todayDates;
+  }
+
+  const pastDates = expiryDates
+    .filter(
+      (date) => getExpiryDateStatus(date, today) === "past",
+    )
+    .sort((a, b) => b.localeCompare(a));
+
+  return pastDates.length > 0 ? [pastDates[0]] : [];
 }
 
 const monthNumbers: Record<string, number> = {
